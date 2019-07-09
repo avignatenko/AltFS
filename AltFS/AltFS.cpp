@@ -5,6 +5,10 @@
 #include "stdafx.h"
 #include "AltFS.h"
 #include "AltFSDlg.h"
+#include "FSUIPCEngine.h"
+
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -32,11 +36,18 @@ CAltFSApp::CAltFSApp()
 CAltFSApp theApp;
 
 
-// CAltFSApp initialization
+
 
 BOOL CAltFSApp::InitInstance()
 {
-	// InitCommonControlsEx() is required on Windows XP if an application
+    // Set the default logger to file logger
+    spdlog::set_level(spdlog::level::debug); // Set global log level to debug
+    auto file_logger = spdlog::basic_logger_mt("basic_logger", "altfs.log");
+    spdlog::set_default_logger(file_logger);
+
+    spdlog::info("AltFs started");
+
+    // InitCommonControlsEx() is required on Windows XP if an application
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
 	// visual styles.  Otherwise, any window creation will fail.
 	INITCOMMONCONTROLSEX InitCtrls;
@@ -48,35 +59,32 @@ BOOL CAltFSApp::InitInstance()
 
 	CWinApp::InitInstance();
 
+    // register FS98MAIN as classname for the dialog
+    WNDCLASS wc;
 
+  	// Get the info for this class.
+           // #32770 is the default class name for dialogs boxes.
+  	::GetClassInfo(AfxGetInstanceHandle(), "#32770", &wc);
+
+  	// Change the name of the class.
+  	wc.lpszClassName = "FS98MAIN";
+
+  	// Register this class so that MFC can use it.
+  	AfxRegisterClass(&wc);
+
+  
 
 	// Standard initialization
-	// If you are not using these features and wish to reduce the size
-	// of your final executable, you should remove from the following
-	// the specific initialization routines you do not need
-	// Change the registry key under which our settings are stored
-	// TODO: You should modify this string to be something appropriate
-	// such as the name of your company or organization
-	SetRegistryKey(_T("Local AppWizard-Generated Applications"));
+	SetRegistryKey(_T("Alexey Ignatenko"));
 
-	CAltFSDlg dlg;
+    FSUIPCEngine engine;
+	CAltFSDlg dlg(engine);
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
-	if (nResponse == IDOK)
-	{
-		// TODO: Place code here to handle when the dialog is
-		//  dismissed with OK
-	}
-	else if (nResponse == IDCANCEL)
-	{
-		// TODO: Place code here to handle when the dialog is
-		//  dismissed with Cancel
-	}
-	else if (nResponse == -1)
+	if (nResponse == -1)
 	{
 		TRACE(traceAppMsg, 0, "Warning: dialog creation failed, so application is terminating unexpectedly.\n");
 	}
-
 
 #if !defined(_AFXDLL) && !defined(_AFX_NO_MFC_CONTROLS_IN_DIALOGS)
 	ControlBarCleanUp();
