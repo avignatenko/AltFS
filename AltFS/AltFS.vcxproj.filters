@@ -57,6 +57,9 @@
     <None Include="res\AltFS.rc2">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\scripts\script.lua">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\AltFS.ico">

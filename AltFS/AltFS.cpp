@@ -40,9 +40,20 @@ CAltFSApp theApp;
 
 BOOL CAltFSApp::InitInstance()
 {
+    // get filename of the executable
+    CString path;
+    GetModuleFileName(NULL, path.GetBuffer(MAX_PATH), MAX_PATH);
+    path.ReleaseBuffer();
+
+    std::filesystem::path exeName = static_cast<LPCSTR>(path);
+    std::filesystem::path exePath = exeName.parent_path();
+
     // Set the default logger to file logger
     spdlog::set_level(spdlog::level::debug); // Set global log level to debug
-    auto file_logger = spdlog::basic_logger_mt("basic_logger", "altfs.log");
+    
+    
+    auto logFilename = exePath / "altfs.log";
+    auto file_logger = spdlog::basic_logger_mt("basic_logger", logFilename.string());
     spdlog::set_default_logger(file_logger);
 
     spdlog::info("AltFs started");
@@ -77,7 +88,7 @@ BOOL CAltFSApp::InitInstance()
 	// Standard initialization
 	SetRegistryKey(_T("Alexey Ignatenko"));
 
-    FSUIPCEngine engine;
+    FSUIPCEngine engine((exePath / "scripts" / "script.lua").string());
 	CAltFSDlg dlg(engine);
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();

@@ -92,10 +92,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(Solutiondir)thirdparty\spdlog\include;$(Solutiondir)thirdparty\luajit\include;$(Solutiondir)thirdparty\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>lua51.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)thirdparty\luajit\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -107,17 +112,27 @@
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <PostBuildEvent>
+      <Command>xcopy /y $(SolutionDir)thirdparty\luajit\bin\lua51.dll $(OutDir)
+xcopy /y $(SolutionDir)scripts\*.* $(OutDir)scripts\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WINDOWS;_CRT_SECURE_NO_WARNINGS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(Solutiondir)thirdparty\spdlog\include;$(Solutiondir)thirdparty\luajit\include;$(Solutiondir)thirdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <AdditionalLibraryDirectories>$(SolutionDir)thirdparty\luajit\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -138,12 +153,17 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(Solutiondir)thirdparty\spdlog\include;$(Solutiondir)thirdparty\luajit\include;$(Solutiondir)thirdparty\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>lua51.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)thirdparty\luajit\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -155,6 +175,10 @@
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <PostBuildEvent>
+      <Command>xcopy /y $(SolutionDir)thirdparty\luajit\bin\lua51.dll $(OutDir)
+xcopy /y $(SolutionDir)scripts\*.* $(OutDir)scripts\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -163,13 +187,19 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WINDOWS;_CRT_SECURE_NO_WARNINGS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(Solutiondir)thirdparty\spdlog\include;$(Solutiondir)thirdparty\luajit\include;$(Solutiondir)thirdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(SolutionDir)thirdparty\luajit\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -206,6 +236,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="res\AltFS.rc2" />
+    <None Include="..\scripts\script.lua" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\AltFS.ico" />

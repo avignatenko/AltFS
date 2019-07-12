@@ -3,6 +3,7 @@
 #include "FSUIPCEngine.h"
 
 #include <spdlog/spdlog.h>
+#include <LuaState/include/LuaState.h>
 
 #pragma pack (push, r1, 1)
 
@@ -44,8 +45,23 @@ typedef struct tagXC_ACTION_WRITETOKEN_HDR
 #define XC_RETURN_SUCCESS			1
 
 
+FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
+    : m_lua(std::make_unique<lua::State>())
+{
+
+
+   lua().doFile(scriptPath.string());
+
+   lua().set("log", [] (int level, const std::string log) { spdlog::debug(log);} );
+
+    // initialize lua script
+    bool result = lua()["initialize"]();
+}
+
 FSUIPCEngine::~FSUIPCEngine()
 {
+    bool result = lua()["shutdown"]();
+
     // fixme: when to clear?
     for(auto& elem:m_fileMap)
     {
@@ -60,7 +76,7 @@ LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
     XC_ACTION_READ_HDR* pHdrR = NULL;
     XC_ACTION_WRITE_HDR* pHdrW = NULL;
  
-    ATOM atom = wParam;
+    ATOM atom = (ATOM)wParam;
     LRESULT result = XC_RETURN_SUCCESS;
     HANDLE hMap;
     BYTE* pView;
@@ -136,11 +152,29 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
         *reinterpret_cast<DWORD*>(data) = 0xFADE000A;
         return;
     }
+
+    auto offsetTable = lua()["offsets"][offset];
+    if (offsetTable.is<lua::Table>())
+    {
+         int type = offsetTable["type"];
+         switch(type)
+         {
+         case 1:
+             uint8_t value = offsetTable["read"]();
+             *reinterpret_cast<uint8_t*>(data) = value;
+
+             break;
+         }
+    }
+
+   lua()["read"](offset, size);
 }
 
 
 void FSUIPCEngine::writeToSim(DWORD offset, DWORD size,  const void* data)
 {
        spdlog::debug("Write request, offset 0x{0:04#x}, size {1}", offset, size);
+
+  
 }
    
