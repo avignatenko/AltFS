@@ -3,7 +3,9 @@
 #include "FSUIPCEngine.h"
 
 #include <spdlog/spdlog.h>
-#include <LuaState/include/LuaState.h>
+
+#define SOL_ALL_SAFETIES_ON 1
+#include <sol/sol.hpp>
 
 #pragma pack (push, r1, 1)
 
@@ -46,13 +48,21 @@ typedef struct tagXC_ACTION_WRITETOKEN_HDR
 
 
 FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
-    : m_lua(std::make_unique<lua::State>())
+    : m_lua(std::make_unique<sol::state>())
 {
 
+	try 
+    {
+		auto result1 = lua().safe_script_file(scriptPath.string());
+	}
+	catch( const sol::error& e ) 
+    {
+        spdlog::error("an expected error has occurred: {}", e.what());
+        throw;
+	}
 
-   lua().doFile(scriptPath.string());
 
-   lua().set("log", [] (int level, const std::string log) { spdlog::debug(log);} );
+   lua().set_function("log", [] (int level, const std::string log) { spdlog::debug(log);} );
 
     // initialize lua script
     bool result = lua()["initialize"]();
@@ -152,9 +162,9 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
         *reinterpret_cast<DWORD*>(data) = 0xFADE000A;
         return;
     }
-
+   
     auto offsetTable = lua()["offsets"][offset];
-    if (offsetTable.is<lua::Table>())
+    if (offsetTable)
     {
          int type = offsetTable["type"];
          switch(type)
@@ -167,7 +177,7 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
          }
     }
 
-   lua()["read"](offset, size);
+   offsetTable["read"](offset, size);
 }
 
 

@@ -3,8 +3,9 @@
 #include <map>
 #include <memory>
 #include <filesystem>
+#include <sol/tuple.hpp>
 
-namespace lua { class State;}
+namespace sol { class state;}
 
 
 class FSUIPCEngine
@@ -20,13 +21,13 @@ private:
     void readFromSim(DWORD offset, DWORD size, void* data);
     void writeToSim(DWORD offset, DWORD size, const void* data);
 
-    lua::State& lua()
+    sol::state& lua()
     {
         return *m_lua;
     }
 
 private:
 
-    std::unique_ptr<lua::State> m_lua;
+    std::unique_ptr<sol::state> m_lua;
     std::map<ATOM, std::pair<HANDLE, BYTE*>> m_fileMap;
 };
