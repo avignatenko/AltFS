@@ -223,8 +223,17 @@
     <ResourceCompile Include="AltFS.rc" />
   </ItemGroup>
   <ItemGroup>
+    <CopyFileToFolders Include="..\scripts\xplane.lua">
+      <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)lua</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)lua</DestinationFolders>
+    </CopyFileToFolders>
     <None Include="res\AltFS.rc2" />
-    <None Include="..\scripts\script.lua" />
+    <CopyFileToFolders Include="..\scripts\script.lua">
+      <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)lua</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)lua</DestinationFolders>
+    </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\AltFS.ico" />

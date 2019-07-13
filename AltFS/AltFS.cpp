@@ -88,7 +88,7 @@ BOOL CAltFSApp::InitInstance()
 	// Standard initialization
 	SetRegistryKey(_T("Alexey Ignatenko"));
 
-    FSUIPCEngine engine((exePath / "scripts" / "script.lua").string());
+    FSUIPCEngine engine((exePath / "lua" / "script.lua").string());
 	CAltFSDlg dlg(engine);
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();

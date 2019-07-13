@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Lua Source Files">
+      <UniqueIdentifier>{961e7d0f-095e-4203-bd0b-394d09385940}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AltFS.h">
@@ -57,13 +60,18 @@
     <None Include="res\AltFS.rc2">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\scripts\script.lua">
-      <Filter>Source Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\AltFS.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\scripts\script.lua">
+      <Filter>Lua Source Files</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\scripts\xplane.lua">
+      <Filter>Lua Source Files</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

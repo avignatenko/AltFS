@@ -46,23 +46,59 @@ typedef struct tagXC_ACTION_WRITETOKEN_HDR
 #define XC_RETURN_FAILURE			0
 #define XC_RETURN_SUCCESS			1
 
+enum class XPlaneType
+{
+    kInt=1,
+    kFloat=2,
+    kIntarray=3, 
+    kFloatarray=4, 
+    kString=5
+};
 
 FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
     : m_lua(std::make_unique<sol::state>())
 {
 
-	try 
+    lua().open_libraries(sol::lib::base, sol::lib::package);
+
+    // service functions
+    lua().set_function("log", [](int level, const std::string log)
     {
-		auto result1 = lua().safe_script_file(scriptPath.string());
-	}
-	catch( const sol::error& e ) 
+        spdlog::debug(log);
+    });
+
+    // x-plane
+
+    lua().set_function("xpl_dataref_subscribe", [this](
+        const std::string& dataref,
+        XPlaneType type,
+        double freq,
+        sol::function callback)
+    {
+        spdlog::debug(dataref);
+
+        callback(100);
+    });
+
+    lua().set_function("xpl_dataref_write", [this](
+        const std::string& dataref,
+        XPlaneType type,
+        sol::lua_value value)
+    {
+        float f = value.as<float>();
+    });
+
+
+    try
+    {
+        auto result1 = lua().safe_script_file(scriptPath.string());
+    }
+    catch (const sol::error& e)
     {
         spdlog::error("an expected error has occurred: {}", e.what());
         throw;
-	}
+    }
 
-
-   lua().set_function("log", [] (int level, const std::string log) { spdlog::debug(log);} );
 
     // initialize lua script
     bool result = lua()["initialize"]();
@@ -73,7 +109,7 @@ FSUIPCEngine::~FSUIPCEngine()
     bool result = lua()["shutdown"]();
 
     // fixme: when to clear?
-    for(auto& elem:m_fileMap)
+    for (auto& elem : m_fileMap)
     {
         UnmapViewOfFile(elem.second.second);
         CloseHandle(elem.second.first);
@@ -82,10 +118,10 @@ FSUIPCEngine::~FSUIPCEngine()
 
 LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
 {
-    
+
     XC_ACTION_READ_HDR* pHdrR = NULL;
     XC_ACTION_WRITE_HDR* pHdrW = NULL;
- 
+
     ATOM atom = (ATOM)wParam;
     LRESULT result = XC_RETURN_SUCCESS;
     HANDLE hMap;
@@ -100,7 +136,7 @@ LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
         hMap = OpenFileMapping(FILE_MAP_WRITE, FALSE, szName);
         pView = static_cast<BYTE*>(MapViewOfFile(hMap, FILE_MAP_WRITE, 0, 0, 0));
         m_fileMap[atom] = {hMap, pView};
-    } 
+    }
     else
     {
         hMap = found->second.first;
@@ -153,7 +189,7 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
     if (offset == 0x3304 && size == 4)
     {
         *reinterpret_cast<DWORD*>(data) = 0x80000000;
-         return;
+        return;
     }
 
     // "Sim" version (return P3D)
@@ -162,29 +198,28 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
         *reinterpret_cast<DWORD*>(data) = 0xFADE000A;
         return;
     }
-   
+
     auto offsetTable = lua()["offsets"][offset];
     if (offsetTable)
     {
-         int type = offsetTable["type"];
-         switch(type)
-         {
-         case 1:
-             uint8_t value = offsetTable["read"]();
-             *reinterpret_cast<uint8_t*>(data) = value;
+        int type = offsetTable["type"];
+        switch (type)
+        {
+        case 1:
+            uint8_t value = offsetTable["read"]();
+            *reinterpret_cast<uint8_t*>(data) = value;
 
-             break;
-         }
+            break;
+        }
     }
 
-   offsetTable["read"](offset, size);
 }
 
 
-void FSUIPCEngine::writeToSim(DWORD offset, DWORD size,  const void* data)
+void FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
 {
-       spdlog::debug("Write request, offset 0x{0:04#x}, size {1}", offset, size);
+    spdlog::debug("Write request, offset 0x{0:04#x}, size {1}", offset, size);
 
-  
+
 }
-   
+
