@@ -2,6 +2,9 @@
 
 #include "FSUIPCEngine.h"
 
+#include "../XPlaneUDPClientCpp/BeaconListener.h"
+
+
 #include <spdlog/spdlog.h>
 
 #define SOL_ALL_SAFETIES_ON 1
@@ -24,18 +27,6 @@ typedef struct tagXC_ACTION_WRITE_HDR
     DWORD size;
 } XC_ACTION_WRITE_HDR;
 
-typedef struct tagXC_ACTION_READTOKEN_HDR
-{
-    DWORD action;
-    DWORD token;
-    void* data;
-} XC_ACTION_READTOKEN_HDR;
-
-typedef struct tagXC_ACTION_WRITETOKEN_HDR
-{
-    DWORD action;
-    DWORD token;
-} XC_ACTION_WRITETOKEN_HDR;
 
 #pragma pack (pop, r1)
 
@@ -102,6 +93,12 @@ FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
 
     // initialize lua script
     bool result = lua()["initialize"]();
+
+    // x-plane
+    m_xplaneDiscoverer.reset(new xplaneudpcpp::BeaconListener([this](const xplaneudpcpp::BeaconListener::ServerInfo& info)
+    {
+       return true; 
+    }));
 }
 
 FSUIPCEngine::~FSUIPCEngine()

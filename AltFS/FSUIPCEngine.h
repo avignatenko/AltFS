@@ -1,12 +1,15 @@
 #pragma once
 
+
+#include <sol/tuple.hpp>
+
 #include <map>
 #include <memory>
 #include <filesystem>
-#include <sol/tuple.hpp>
+
 
 namespace sol { class state;}
-
+namespace xplaneudpcpp { class BeaconListener;}
 
 class FSUIPCEngine
 {
@@ -30,4 +33,7 @@ private:
 
     std::unique_ptr<sol::state> m_lua;
     std::map<ATOM, std::pair<HANDLE, BYTE*>> m_fileMap;
+
+    // x-plane
+    std::unique_ptr<xplaneudpcpp::BeaconListener> m_xplaneDiscoverer;
 };
