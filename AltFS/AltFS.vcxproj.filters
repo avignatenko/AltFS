@@ -36,6 +36,12 @@
     <ClInclude Include="FSUIPCEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ActiveObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LuaEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AltFS.cpp">
@@ -48,6 +54,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FSUIPCEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LuaEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

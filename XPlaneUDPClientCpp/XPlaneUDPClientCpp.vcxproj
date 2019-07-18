@@ -149,6 +149,7 @@
   <ItemGroup>
     <ClInclude Include="BeaconListener.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="UDPClient.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BeaconListener.cpp" />

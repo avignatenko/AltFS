@@ -3,12 +3,10 @@
 #include "FSUIPCEngine.h"
 
 #include "../XPlaneUDPClientCpp/BeaconListener.h"
+#include "../XPlaneUDPClientCpp/UDPClient.h"
 
 
 #include <spdlog/spdlog.h>
-
-#define SOL_ALL_SAFETIES_ON 1
-#include <sol/sol.hpp>
 
 #pragma pack (push, r1, 1)
 
@@ -31,80 +29,29 @@ typedef struct tagXC_ACTION_WRITE_HDR
 #pragma pack (pop, r1)
 
 
-#define XC_ACTION_READ				4
+#define XC_ACTION_READ				1
 #define XC_ACTION_WRITE			2
 
 #define XC_RETURN_FAILURE			0
 #define XC_RETURN_SUCCESS			1
 
-enum class XPlaneType
-{
-    kInt=1,
-    kFloat=2,
-    kIntarray=3, 
-    kFloatarray=4, 
-    kString=5
-};
 
 FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
-    : m_lua(std::make_unique<sol::state>())
+    : m_lua(scriptPath)
+   
 {
-
-    lua().open_libraries(sol::lib::base, sol::lib::package);
-
-    // service functions
-    lua().set_function("log", [](int level, const std::string log)
-    {
-        spdlog::debug(log);
-    });
-
-    // x-plane
-
-    lua().set_function("xpl_dataref_subscribe", [this](
-        const std::string& dataref,
-        XPlaneType type,
-        double freq,
-        sol::function callback)
-    {
-        spdlog::debug(dataref);
-
-        callback(100);
-    });
-
-    lua().set_function("xpl_dataref_write", [this](
-        const std::string& dataref,
-        XPlaneType type,
-        sol::lua_value value)
-    {
-        float f = value.as<float>();
-    });
-
-
-    try
-    {
-        auto result1 = lua().safe_script_file(scriptPath.string());
-    }
-    catch (const sol::error& e)
-    {
-        spdlog::error("an expected error has occurred: {}", e.what());
-        throw;
-    }
-
-
-    // initialize lua script
-    bool result = lua()["initialize"]();
-
     // x-plane
     m_xplaneDiscoverer.reset(new xplaneudpcpp::BeaconListener([this](const xplaneudpcpp::BeaconListener::ServerInfo& info)
     {
+       std::scoped_lock(m_xplaneClientLock);
+       m_xplaneClient = std::make_unique<xplaneudpcpp::UDPClient>(info.host, info.port);
        return true; 
     }));
 }
 
 FSUIPCEngine::~FSUIPCEngine()
 {
-    bool result = lua()["shutdown"]();
-
+   
     // fixme: when to clear?
     for (auto& elem : m_fileMap)
     {
@@ -196,19 +143,7 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
         return;
     }
 
-    auto offsetTable = lua()["offsets"][offset];
-    if (offsetTable)
-    {
-        int type = offsetTable["type"];
-        switch (type)
-        {
-        case 1:
-            uint8_t value = offsetTable["read"]();
-            *reinterpret_cast<uint8_t*>(data) = value;
-
-            break;
-        }
-    }
+    m_lua.readFromSim(offset, size, data);
 
 }
 
@@ -217,6 +152,6 @@ void FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
 {
     spdlog::debug("Write request, offset 0x{0:04#x}, size {1}", offset, size);
 
-
+    m_lua.writeToSim(offset, size, data);
 }
 

@@ -1,15 +1,12 @@
 #pragma once
 
-
-#include <sol/tuple.hpp>
-
 #include <map>
 #include <memory>
 #include <filesystem>
 
+#include "LuaEngine.h"
 
-namespace sol { class state;}
-namespace xplaneudpcpp { class BeaconListener;}
+namespace xplaneudpcpp { class BeaconListener; class UDPClient;}
 
 class FSUIPCEngine
 {
@@ -24,16 +21,15 @@ private:
     void readFromSim(DWORD offset, DWORD size, void* data);
     void writeToSim(DWORD offset, DWORD size, const void* data);
 
-    sol::state& lua()
-    {
-        return *m_lua;
-    }
-
+  
 private:
 
-    std::unique_ptr<sol::state> m_lua;
     std::map<ATOM, std::pair<HANDLE, BYTE*>> m_fileMap;
 
+    LuaEngine m_lua;
+
     // x-plane
+    std::mutex m_xplaneClientLock;
     std::unique_ptr<xplaneudpcpp::BeaconListener> m_xplaneDiscoverer;
+    std::unique_ptr<xplaneudpcpp::UDPClient> m_xplaneClient;
 };
