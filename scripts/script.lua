@@ -11,7 +11,7 @@ offsets=
 [0x238]={
 	type = fsuipc_types.array,
 	size = 3,
-	read = function() return string.char(testVar2:read(), testVar3:read(), 30) end,
+	read = function() return string.char(testVar2:read(), testVar3:read(), string.byte("A")) end,
 	write = function(value) end
 },
 [0x225]={

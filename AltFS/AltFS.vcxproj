@@ -206,6 +206,8 @@
     <ClInclude Include="AltFSDlg.h" />
     <ClInclude Include="FSUIPCEngine.h" />
     <ClInclude Include="LuaEngine.h" />
+    <ClInclude Include="LuaModule.h" />
+    <ClInclude Include="LuaXPlane.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -215,6 +217,7 @@
     <ClCompile Include="AltFSDlg.cpp" />
     <ClCompile Include="FSUIPCEngine.cpp" />
     <ClCompile Include="LuaEngine.cpp" />
+    <ClCompile Include="LuaXPlane.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

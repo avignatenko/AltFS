@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "LuaEngine.h"
+#include "LuaModule.h"
 
 #define SOL_ALL_SAFETIES_ON 1
 #include <sol/sol.hpp>
@@ -8,73 +9,11 @@
 
 #include <future>
 
-enum class XPlaneType
-{
-    kInt = 1,
-    kFloat = 2,
-    kIntarray = 3,
-    kFloatarray = 4,
-    kString = 5
-};
-
 LuaEngine::LuaEngine(const std::filesystem::path & scriptPath)
     : m_lua(std::make_unique<sol::state>())
+    , m_scriptPath(scriptPath)
 {
-    dispatchQueue.put([this, scriptPath]
-    {
-        lua().open_libraries(sol::lib::base, sol::lib::package, sol::lib::string);
-
-        // service functions
-        lua().set_function("log", [](int level, const std::string log)
-        {
-            spdlog::debug(log);
-        });
-
-        // x-plane
-
-        lua().set_function("xpl_dataref_subscribe", [this](
-            const std::string& dataref,
-            XPlaneType type,
-            double freq,
-            sol::function callback)
-        {
-            spdlog::debug(dataref);
-
-            //m_xplaneClient->subscribeDataref(dataref, freq, [callback](float value)
-           //{
-            //    callback(value);
-           // });
-
-
-        });
-
-        lua().set_function("xpl_dataref_write", [this](
-            const std::string& dataref,
-            XPlaneType type,
-            sol::lua_value value)
-        {
-            //float f = value.as<float>();
-            //m_xplaneClient->writeDataref(dataref, f);
-        });
-
-
-        try
-        {
-            auto result1 = lua().safe_script_file(scriptPath.string());
-        }
-        catch (const sol::error& e)
-        {
-            spdlog::error("an expected error has occurred: {}", e.what());
-            throw;
-        }
-
-
-        // initialize lua script
-        bool result = lua()["initialize"]();
-
-    });
-
-
+    
 }
 
 LuaEngine::~LuaEngine()
@@ -107,7 +46,7 @@ void LuaEngine::readFromSim(DWORD offset, DWORD size, void* data)
             {
             case 11: 
             {
-                std::string value = offsetTable.value()["read"]();;
+                std::string value = offsetTable.value()["read"]();
                 std::copy(value.begin(), value.end(), (uint8_t*)data);
                 break;
             }
@@ -142,11 +81,59 @@ void LuaEngine::writeToSim(DWORD offset, DWORD size, const void * data)
             int type = offsetTable.value()["type"];
             switch (type)
             {
-            case 1:
+            case 1: // uint8
                 offsetTable.value()["write"](*reinterpret_cast<const uint8_t*>(dataVec.data()));
+                break;
+            case 2: // uint16
+                offsetTable.value()["write"](*reinterpret_cast<const uint16_t*>(dataVec.data()));
                 break;
             }
         }
+    });
+
+}
+
+void LuaEngine::addModule(LuaModule& mod)
+{
+    std::promise<void> retval;
+
+    dispatchQueue.put([this, &mod, &retval]
+    {
+        mod.init(*this);
+        retval.set_value();
+    });
+
+    retval.get_future().get();
+}
+
+void LuaEngine::init()
+{
+
+    dispatchQueue.put([this]
+    {
+        lua().open_libraries(sol::lib::base, sol::lib::package, sol::lib::string);
+
+        // service functions
+        lua().set_function("log", [](int level, const std::string log)
+        {
+            spdlog::debug(log);
+        });
+
+        
+        try
+        {
+            auto result1 = lua().safe_script_file(m_scriptPath.string());
+        }
+        catch (const sol::error& e)
+        {
+            spdlog::error("an expected error has occurred: {}", e.what());
+            throw;
+        }
+
+
+        // initialize lua script
+        bool result = lua()["initialize"]();
+
     });
 
 }

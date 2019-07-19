@@ -5,8 +5,7 @@
 #include <filesystem>
 
 #include "LuaEngine.h"
-
-namespace xplaneudpcpp { class BeaconListener; class UDPClient;}
+#include "LuaXPlane.h"
 
 class FSUIPCEngine
 {
@@ -27,9 +26,7 @@ private:
     std::map<ATOM, std::pair<HANDLE, BYTE*>> m_fileMap;
 
     LuaEngine m_lua;
+    LuaXPlane m_xPlaneModule;
 
-    // x-plane
-    std::mutex m_xplaneClientLock;
-    std::unique_ptr<xplaneudpcpp::BeaconListener> m_xplaneDiscoverer;
-    std::unique_ptr<xplaneudpcpp::UDPClient> m_xplaneClient;
+    
 };

@@ -1,11 +1,6 @@
 #include "stdafx.h" 
 
 #include "FSUIPCEngine.h"
-
-#include "../XPlaneUDPClientCpp/BeaconListener.h"
-#include "../XPlaneUDPClientCpp/UDPClient.h"
-
-
 #include <spdlog/spdlog.h>
 
 #pragma pack (push, r1, 1)
@@ -40,13 +35,17 @@ FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
     : m_lua(scriptPath)
    
 {
-    // x-plane
-    m_xplaneDiscoverer.reset(new xplaneudpcpp::BeaconListener([this](const xplaneudpcpp::BeaconListener::ServerInfo& info)
+    m_lua.addModule(m_xPlaneModule);
+    m_lua.init();
+
+    // test
+    /*
+    for (int i = 0; i < 50000; ++i)
     {
-       std::scoped_lock(m_xplaneClientLock);
-       m_xplaneClient = std::make_unique<xplaneudpcpp::UDPClient>(info.host, info.port);
-       return true; 
-    }));
+    DWORD testdata = i;
+    m_lua.writeToSim(0x225, 4, &testdata);
+    }
+    */
 }
 
 FSUIPCEngine::~FSUIPCEngine()

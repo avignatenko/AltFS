@@ -4,6 +4,8 @@ xplane.types = {int=1, float=2, intarray=3, floatarray=4, string=5}
 
 xplane.dataref = {}
 
+local type2def = {[xplane.types.int] = 0, [xplane.types.float] = 0.0, [xplane.types.string]=""}
+
 function xplane.dataref:new (_path, _type, _freq, _ops)
     o = {path=_path, type=_type, freq=_freq, ops=_ops}
     setmetatable(o, self)
@@ -13,6 +15,7 @@ function xplane.dataref:new (_path, _type, _freq, _ops)
 	  xpl_dataref_subscribe(o.path, o.type, o.freq, function(value) o.value = value end)
 	end
 
+	o.value = type2def[_type]
     return o
 end
 
@@ -23,7 +26,7 @@ end
 
 function xplane.dataref:read()
    log(1, "read variable" .. self.path)
-    return value;
+   return self.value;
 end
 
 return xplane
