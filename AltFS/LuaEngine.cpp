@@ -22,7 +22,7 @@ LuaEngine::~LuaEngine()
 
      std::promise<bool> retval;
 
-     dispatchQueue.put([this, &retval]
+     m_dispatchQueue.put([this, &retval]
      {
           bool result = lua()["shutdown"]();
           retval.set_value(result);
@@ -36,7 +36,7 @@ void LuaEngine::readFromSim(DWORD offset, DWORD size, void* data)
 {
     std::promise<void> retval;
 
-    dispatchQueue.put([this, offset, data, &retval]
+    m_dispatchQueue.put([this, offset, data, &retval]
     {
         sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
         if (offsetTable.has_value())
@@ -73,7 +73,7 @@ void LuaEngine::writeToSim(DWORD offset, DWORD size, const void * data)
     std::vector<uint8_t> dataVec((uint8_t*)data, (uint8_t*)data + size);
 
     // put to queue
-    dispatchQueue.put([this, dataVec, offset]
+    m_dispatchQueue.put([this, dataVec, offset]
     {
         sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
         if (offsetTable.has_value())
@@ -97,7 +97,7 @@ void LuaEngine::addModule(LuaModule& mod)
 {
     std::promise<void> retval;
 
-    dispatchQueue.put([this, &mod, &retval]
+    m_dispatchQueue.put([this, &mod, &retval]
     {
         mod.init(*this);
         retval.set_value();
@@ -109,7 +109,7 @@ void LuaEngine::addModule(LuaModule& mod)
 void LuaEngine::init()
 {
 
-    dispatchQueue.put([this]
+    m_dispatchQueue.put([this]
     {
         lua().open_libraries(sol::lib::base, sol::lib::package, sol::lib::string);
 

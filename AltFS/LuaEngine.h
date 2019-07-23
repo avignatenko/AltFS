@@ -16,7 +16,7 @@ public:
 
     // lua module api
     virtual sol::state& getLua() override { return lua();}
-    virtual void runOnLuaThread(std::function<void()> func) override {dispatchQueue.put(func);}
+    virtual void runOnLuaThread(std::function<void()> func) override {m_dispatchQueue.put(func);}
 
     // own
     void addModule(LuaModule& module);

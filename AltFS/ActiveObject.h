@@ -13,49 +13,48 @@ public:
 
     void put(Operation op)
     {
-        std::lock_guard<std::mutex> guard(qlock);
-        ops_queue.push(op);
-        empty.notify_one();
+        std::lock_guard<std::mutex> guard(m_qlock);
+        m_opsQueue.push(op);
+        m_empty.notify_one();
     }
 
     Operation take()
     {
-        std::unique_lock<std::mutex> lock(qlock);
-        empty.wait(lock, [&] { return !ops_queue.empty(); });
+        std::unique_lock<std::mutex> lock(m_qlock);
+        m_empty.wait(lock, [&] { return !m_opsQueue.empty(); });
 
-        Operation op = ops_queue.front();
-        ops_queue.pop();
+        Operation op = m_opsQueue.front();
+        m_opsQueue.pop();
         return op;
     }
 
 private:
 
-    std::mutex qlock;
-    std::queue<Operation> ops_queue;
-    std::condition_variable empty;
+    std::mutex m_qlock;
+    std::queue<Operation> m_opsQueue;
+    std::condition_variable m_empty;
 
 };
 
-/// http://netaz.blogspot.com/2015/01/revisiting-active-object-pattern-with.html
 class ActiveObject
 {
 public:
     ActiveObject()
     {
-        runnable = std::make_unique<std::thread>(&ActiveObject::run, this);
+        m_runnable = std::make_unique<std::thread>(&ActiveObject::run, this);
     }
 
     virtual ~ActiveObject()
     {
         stop();
-        runnable->join();
+        m_runnable->join();
     }
    
 private:
 
      void stop()
     {
-        dispatchQueue.put(nullptr);
+        m_dispatchQueue.put(nullptr);
     }
 
     void run()
@@ -63,7 +62,7 @@ private:
         bool done = false;
         while (!done)
         {
-            auto functor = dispatchQueue.take();
+            auto functor = m_dispatchQueue.take();
             if (functor)
                 functor();
             else
@@ -73,9 +72,9 @@ private:
 
 protected:
 
-    DispatchQueue dispatchQueue;
+    DispatchQueue m_dispatchQueue;
 
 private:
 
-    std::unique_ptr<std::thread> runnable;
+    std::unique_ptr<std::thread> m_runnable;
 };
