@@ -1,8 +1,10 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf470
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf600
 {\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fmodern\fcharset0 CourierNewPSMT;}
 {\colortbl;\red255\green255\blue255;\red255\green0\blue0;\red170\green13\blue145;\red28\green0\blue207;
 \red0\green116\blue0;\red46\green13\blue110;\red37\green65\blue69;\red57\green99\blue105;}
-\paperw12240\paperh15840\margl1440\margr1440\vieww34300\viewh18280\viewkind0
+{\*\expandedcolortbl;;\csgenericrgb\c100000\c0\c0;\csgenericrgb\c66667\c5098\c56863;\csgenericrgb\c10980\c0\c81176;
+\csgenericrgb\c0\c45490\c0;\csgenericrgb\c18039\c5098\c43137;\csgenericrgb\c14510\c25490\c27059;\csgenericrgb\c22353\c38824\c41176;}
+\paperw12240\paperh15840\margl1440\margr1440\vieww27660\viewh16580\viewkind0
 \deftab640
 \pard\tx640\pardeftab640\partightenfactor0
 
@@ -429,7 +431,7 @@ The [ and ] should simply surround the number to indicate that the number is the
 So, send in \'93sim/flightmodel/engine/POINT_thrust[1] \'93to have X-Plane send the second engine, for example (since we start at 0!)\
 \
 NOTE: You can send at most about 148 requests at one go (that is, without X-Plane advancing one frame in between). If you are requesting more than about 140 data refs, it is best to request them in batches of 100, and wait 100 milliseconds before requesting the next batch.\
-\
+\uc0\u1099 \u1097 \
 X-Plane will send the message right back to the IP address and port number you sent the RREF command from!\
 You will get:\
 \
@@ -482,7 +484,7 @@ DREF0+(4byte byte value)+dref_path+0+spaces to complete the whole message to 509
 AN EXAMPLE TO TURN ON AN ANTI-ICE SWITCH WOULD BE\
 \
 DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes\
-\
+\uc0\u1099 \
 DO NOT ADD ANY + SIGNS. THIS IS JUST TO SHOW THE PARTS OF THE MESSAGE TO BE ADDED AS ONE SINGLE BLOCK\
 \
 REMEMBER: You can go to the SETTINGS menu, OPERATIONS AND WARNING window, to turn on a diganostics option that will output what data X-Plane thinks it is getting from you to a log file!\

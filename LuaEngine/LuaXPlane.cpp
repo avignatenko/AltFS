@@ -18,66 +18,117 @@ enum class XPlaneType
     kString = 5
 };
 
-LuaXPlane::LuaXPlane()
+LuaXPlane* LuaXPlane::s_instance = nullptr;
+
+LuaXPlane::LuaXPlane(LuaModuleAPI& api) : api_(api)
 {
+    s_instance = this;
 }
 
 LuaXPlane::~LuaXPlane()
 {
+    s_instance = nullptr;
 }
 
-void LuaXPlane::init(LuaModuleAPI& api)
+
+class Dataref
 {
-    // x-plane
+public:
 
-    api.getLua()["xpl_dataref_subscribe"] = [this, &api](
-        const std::string& dataref,
-        XPlaneType type,
-        double freq,
-        sol::function callback)
+    Dataref(const std::string& path, int type, int freq)
+        : path_(path)
+        , type_(type)
+        , freq_(freq)
     {
-        spdlog::debug("read: {}", dataref);
+    }
 
-        if (!m_xplaneClient) return;
-        m_xplaneClient->subscribeDataref(dataref, freq, [callback, &api](float value)
+    float read()
+    {
+        if (!LuaXPlane::s_instance->xplaneClient_)
+            return 0.0;
+
+        if (!subcribed_)
         {
-            api.runOnLuaThread([callback, value]{
-                 callback(value);
-            });
-        });
-    };
-
-    api.getLua()["xpl_dataref_write"] = [this](
-        const std::string& dataref,
-        XPlaneType type,
-        sol::lua_value value)
-    {
-        spdlog::debug("write: {}", dataref);
-
-        if (!m_xplaneClient) return;
-
-        float f = value.as<float>();
-        m_xplaneClient->writeDataref(dataref, f);
-    };
-
-    api.getLua()["xpl_connect"] = [this, &api](const std::string& host, int port)
-    {
-        m_xplaneClient = std::make_unique<xplaneudpcpp::UDPClient>(host, port);
-        if (m_xplaneConnectCallback) m_xplaneConnectCallback(true);
-    };
-
-    api.getLua()["xpl_start_autodiscovery"] = [this, &api]()
-    {
-        // start x-plane discovery
-        m_xplaneDiscoverer.reset(new xplaneudpcpp::BeaconListener([this, &api](const xplaneudpcpp::BeaconListener::ServerInfo& info)
-        {
-            api.runOnLuaThread([this, info] {
-                m_xplaneClient = std::make_unique<xplaneudpcpp::UDPClient>(info.host, info.port);
-                if (m_xplaneConnectCallback) m_xplaneConnectCallback(true);
+            LuaXPlane::s_instance->xplaneClient_->subscribeDataref(path_, freq_, [this](float value)
+            {
+                LuaXPlane::s_instance->api_.runOnLuaThread([this, value]
+                {
+                    value_ = value;
+                });
             });
 
-            return true;
-        }));
-    };
+            subcribed_ = true;
+        }
 
+
+        return value_;
+    }
+
+    void write(float value)
+    {
+        if (!LuaXPlane::s_instance->xplaneClient_)
+            return;
+
+        LuaXPlane::s_instance->xplaneClient_->writeDataref(path_, value);
+    }
+
+private:
+
+    std::string path_;
+    int type_;
+    int freq_;
+    float value_ = 0.0;
+    bool subcribed_ = false;
+};
+
+void LuaXPlane::init()
+{
+    api_.runOnLuaThread([this]
+    {
+
+        // x-plane
+
+        auto xplane = api_.getLua()["xplane"].get_or_create<sol::table>();
+
+        xplane["types"] = api_.getLua().create_table_with(
+            "int", 1,
+            "float", 2,
+            "intarray", 3,
+            "floatarray", 4,
+            "string", 5);
+
+        xplane.new_usertype<Dataref>("dataref",
+                                     sol::constructors<Dataref(const std::string&, int, int)>(),
+                                     "read", &Dataref::read,
+                                     "write", &Dataref::write);
+
+
+        xplane["connect"] = [this](const std::string& host, int port)
+        {
+            xplaneClient_ = std::make_unique<xplaneudpcpp::UDPClient>(host, port);
+
+            api_.getLua()["connected"]();
+
+            for (auto& callback : xplaneConnectCallback_)
+                callback(true);
+        };
+
+        xplane["start_autodiscovery"] = [this]()
+        {
+            // start x-plane discovery
+            xplaneDiscoverer_.reset(new xplaneudpcpp::BeaconListener([this](const xplaneudpcpp::BeaconListener::ServerInfo& info)
+            {
+                api_.runOnLuaThread([this, info] {
+                    xplaneClient_ = std::make_unique<xplaneudpcpp::UDPClient>(info.host, info.port);
+
+                    api_.getLua()["connected"]();
+
+                    for (auto& callback : xplaneConnectCallback_)
+                        callback(true);
+                });
+
+                return true;
+            }));
+        };
+    });
 }

@@ -46,9 +46,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\scripts\xplane.lua">
-      <Filter>Lua Source Files</Filter>
-    </CopyFileToFolders>
     <CopyFileToFolders Include="..\scripts\script.lua">
       <Filter>Lua Source Files</Filter>
     </CopyFileToFolders>

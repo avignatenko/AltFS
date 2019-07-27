@@ -21,7 +21,7 @@ public:
     ~UDPClient();
 
     void writeDataref(const std::string& dataref, float f);
-    void subscribeDataref(const std::string& dataref, double freq, std::function<void(float)> callback);
+    void subscribeDataref(const std::string& dataref, int freq, std::function<void(float)> callback);
 
 private:
 

@@ -5,24 +5,31 @@
 #include <memory>
 namespace xplaneudpcpp { class BeaconListener; class UDPClient;}
 
-class LuaXPlane: public LuaModule
+class LuaXPlane
 {
 public:
 
-    LuaXPlane();
+    LuaXPlane(LuaModuleAPI& api);
     ~LuaXPlane();
 
-    // Inherited via LuaModule
-    virtual void init(LuaModuleAPI& api) override;
+    void init();
 
     using XPlaneConnectCallback = std::function<void(bool)>;
 
-    void setConnectedCallback(XPlaneConnectCallback callback) { m_xplaneConnectCallback = callback; }
-    bool isConnected() const { return m_xplaneClient != nullptr; }
+    void addConnectedCallback(XPlaneConnectCallback callback) { xplaneConnectCallback_.push_back(callback); }
+    
+    bool isConnected() const { return xplaneClient_ != nullptr; }
+
 private:
 
     // x-plane
-    std::unique_ptr<xplaneudpcpp::BeaconListener> m_xplaneDiscoverer;
-    std::unique_ptr<xplaneudpcpp::UDPClient> m_xplaneClient;
-    XPlaneConnectCallback  m_xplaneConnectCallback;
+    std::unique_ptr<xplaneudpcpp::BeaconListener> xplaneDiscoverer_;
+    std::unique_ptr<xplaneudpcpp::UDPClient> xplaneClient_;
+    std::vector<XPlaneConnectCallback>  xplaneConnectCallback_;
+
+    LuaModuleAPI& api_;
+
+    static LuaXPlane* s_instance;
+
+    friend class Dataref;
 };

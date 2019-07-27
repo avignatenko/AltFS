@@ -13,7 +13,29 @@ LuaEngine::LuaEngine(const std::filesystem::path & scriptPath)
     : m_lua(std::make_unique<sol::state>())
     , m_scriptPath(scriptPath)
 {
-    
+    m_dispatchQueue.put([this]
+    {
+        lua().open_libraries(sol::lib::base, sol::lib::package, sol::lib::string);
+
+        // service functions
+        lua().set_function("log", [](int level, const std::string log)
+        {
+            spdlog::debug(log);
+        });
+
+        
+        try
+        {
+            auto result1 = lua().safe_script_file(m_scriptPath.string());
+        }
+        catch (const sol::error& e)
+        {
+            spdlog::error("an expected error has occurred: {}", e.what());
+            throw;
+        }
+
+    });
+
 }
 
 LuaEngine::~LuaEngine()
@@ -44,7 +66,7 @@ void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
             int type = offsetTable.value()["type"];
             switch (type)
             {
-            case 11: 
+            case 11:
             {
                 std::string value = offsetTable.value()["read"]();
                 std::copy(value.begin(), value.end(), (uint8_t*)data);
@@ -52,12 +74,25 @@ void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
             }
             case 1:
             {
-                uint8_t value = offsetTable.value()["read"]();
+                float value = offsetTable.value()["read"]();
                 *reinterpret_cast<uint8_t*>(data) = value;
-
                 break;
             }
+            case 2:
+            {
+                float value = offsetTable.value()["read"]();
+                *reinterpret_cast<uint16_t*>(data) = value;
+                break;
             }
+            case 6:
+            {
+                float value = offsetTable.value()["read"]();
+                *reinterpret_cast<int16_t*>(data) = value;
+                break;
+            }
+
+            }
+            
         }
         retval.set_value();
     });
@@ -96,44 +131,12 @@ void LuaEngine::writeToSim(uint32_t offset, uint32_t size, const void * data)
 
 }
 
-void LuaEngine::addModule(LuaModule& mod)
-{
-    std::promise<void> retval;
-
-    m_dispatchQueue.put([this, &mod, &retval]
-    {
-        mod.init(*this);
-        retval.set_value();
-    });
-
-    retval.get_future().get();
-}
-
 void LuaEngine::init()
 {
 
     m_dispatchQueue.put([this]
     {
-        lua().open_libraries(sol::lib::base, sol::lib::package, sol::lib::string);
-
-        // service functions
-        lua().set_function("log", [](int level, const std::string log)
-        {
-            spdlog::debug(log);
-        });
-
-        
-        try
-        {
-            auto result1 = lua().safe_script_file(m_scriptPath.string());
-        }
-        catch (const sol::error& e)
-        {
-            spdlog::error("an expected error has occurred: {}", e.what());
-            throw;
-        }
-
-
+ 
         // initialize lua script
         bool result = lua()["initialize"]();
 

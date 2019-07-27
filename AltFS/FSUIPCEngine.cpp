@@ -32,20 +32,11 @@ typedef struct tagXC_ACTION_WRITE_HDR
 
 
 FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
-    : m_lua(scriptPath)
+    : m_lua(scriptPath), m_xPlaneModule(m_lua)
    
 {
-    m_lua.addModule(m_xPlaneModule);
+    m_xPlaneModule.init();
     m_lua.init();
-
-    // test
-    /*
-    for (int i = 0; i < 50000; ++i)
-    {
-    DWORD testdata = i;
-    m_lua.writeToSim(0x225, 4, &testdata);
-    }
-    */
 }
 
 FSUIPCEngine::~FSUIPCEngine()

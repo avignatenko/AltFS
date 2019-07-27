@@ -19,7 +19,6 @@ public:
     virtual void runOnLuaThread(std::function<void()> func) override {m_dispatchQueue.put(func);}
 
     // own
-    void addModule(LuaModule& module);
     void init();
 
     void readFromSim(uint32_t offset, uint32_t size, void* data);
