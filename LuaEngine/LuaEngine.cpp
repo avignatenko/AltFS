@@ -63,30 +63,30 @@ void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
         sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
         if (offsetTable.has_value())
         {
-            int type = offsetTable.value()["type"];
+            int type = offsetTable.value()[1];
             switch (type)
             {
             case 11:
             {
-                std::string value = offsetTable.value()["read"]();
+                std::string value = offsetTable.value()[2]();
                 std::copy(value.begin(), value.end(), (uint8_t*)data);
                 break;
             }
             case 1:
             {
-                float value = offsetTable.value()["read"]();
+                float value = offsetTable.value()[2]();
                 *reinterpret_cast<uint8_t*>(data) = value;
                 break;
             }
             case 2:
             {
-                float value = offsetTable.value()["read"]();
+                float value = offsetTable.value()[2]();
                 *reinterpret_cast<uint16_t*>(data) = value;
                 break;
             }
             case 6:
             {
-                float value = offsetTable.value()["read"]();
+                float value = offsetTable.value()[2]();
                 *reinterpret_cast<int16_t*>(data) = value;
                 break;
             }
@@ -113,17 +113,17 @@ void LuaEngine::writeToSim(uint32_t offset, uint32_t size, const void * data)
         sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
         if (offsetTable.has_value())
         {
-            int type = offsetTable.value()["type"];
+            int type = offsetTable.value()[1];
             switch (type)
             {
             case 1: // uint8
-                offsetTable.value()["write"](*reinterpret_cast<const uint8_t*>(dataVec.data()));
+                offsetTable.value()[3](*reinterpret_cast<const uint8_t*>(dataVec.data()));
                 break;
             case 2: // uint16
-                offsetTable.value()["write"](*reinterpret_cast<const uint16_t*>(dataVec.data()));
+                offsetTable.value()[3](*reinterpret_cast<const uint16_t*>(dataVec.data()));
                 break;
             case 6: // sint16
-                offsetTable.value()["write"](*reinterpret_cast<const int16_t*>(dataVec.data()));
+                offsetTable.value()[3](*reinterpret_cast<const int16_t*>(dataVec.data()));
                 break;
             }
         }

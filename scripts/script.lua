@@ -10,14 +10,14 @@ function connected()
 	offsets=
 	{
 	[0x0bb2]={
-	  type = fsuipc_types.sint16, 
-	  read = function() return yoke_pitch_ratio:read() * 16383 end,  
-	  write = function(value)  yoke_pitch_ratio:write(value / 16383 ) end
+	  fsuipc_types.sint16, 
+	  function() return yoke_pitch_ratio:read() * 16383 end,  
+	  function(value)  yoke_pitch_ratio:write(value / 16383 ) end
 	  },
 	[0x0bb6]={
-	  type = fsuipc_types.sint16, 
-	  read = function() return yoke_roll_ratio:read() * 16383 end,  
-	  write = function(value)  yoke_roll_ratio:write(value / 16383 ) end
+	  fsuipc_types.sint16, 
+	  function() return yoke_roll_ratio:read() * 16383 end,  
+	  function(value)  yoke_roll_ratio:write(value / 16383 ) end
 	  },
 	}
 
