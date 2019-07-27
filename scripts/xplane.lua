@@ -29,4 +29,12 @@ function xplane.dataref:read()
    return self.value;
 end
 
+
+function xplane.start_autodiscovery()
+  xpl_start_autodiscovery()
+end
+
+function xplane.connect(host, port)
+  xpl_connect(host, port)
+end
 return xplane

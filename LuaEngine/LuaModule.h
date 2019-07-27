@@ -2,6 +2,8 @@
 
 namespace sol { class state;}
 
+#include <functional>
+
 class LuaModuleAPI
 {
 public:

@@ -216,8 +216,6 @@
     <ClCompile Include="AltFS.cpp" />
     <ClCompile Include="AltFSDlg.cpp" />
     <ClCompile Include="FSUIPCEngine.cpp" />
-    <ClCompile Include="LuaEngine.cpp" />
-    <ClCompile Include="LuaXPlane.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -229,22 +227,15 @@
     <ResourceCompile Include="AltFS.rc" />
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\scripts\xplane.lua">
-      <FileType>Document</FileType>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)lua</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)lua</DestinationFolders>
-    </CopyFileToFolders>
     <None Include="res\AltFS.rc2" />
-    <CopyFileToFolders Include="..\scripts\script.lua">
-      <FileType>Document</FileType>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)lua</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)lua</DestinationFolders>
-    </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\AltFS.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LuaEngine\LuaEngine.vcxproj">
+      <Project>{18840c4e-ad6d-4343-aa64-a1702518c357}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\XPlaneUDPClientCpp\XPlaneUDPClientCpp.vcxproj">
       <Project>{bb211e50-cde3-428b-942e-a6bb7ef2bc03}</Project>
     </ProjectReference>

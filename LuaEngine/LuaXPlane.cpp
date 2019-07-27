@@ -5,6 +5,7 @@
 #include "../XPlaneUDPClientCpp/BeaconListener.h"
 #include "../XPlaneUDPClientCpp/UDPClient.h"
 
+#include <spdlog/spdlog.h>
 #include <sol/state.hpp>
 #include <functional>
 
@@ -59,13 +60,24 @@ void LuaXPlane::init(LuaModuleAPI& api)
         m_xplaneClient->writeDataref(dataref, f);
     };
 
-     // start x-plane discovery
-    m_xplaneDiscoverer.reset(new xplaneudpcpp::BeaconListener([this, &api](const xplaneudpcpp::BeaconListener::ServerInfo& info)
+    api.getLua()["xpl_connect"] = [this, &api](const std::string& host, int port)
     {
-        api.runOnLuaThread([this, info]{
-             m_xplaneClient = std::make_unique<xplaneudpcpp::UDPClient>(info.host, info.port);
-        });
+        m_xplaneClient = std::make_unique<xplaneudpcpp::UDPClient>(host, port);
+        if (m_xplaneConnectCallback) m_xplaneConnectCallback(true);
+    };
 
-        return true; 
-    }));
+    api.getLua()["xpl_start_autodiscovery"] = [this, &api]()
+    {
+        // start x-plane discovery
+        m_xplaneDiscoverer.reset(new xplaneudpcpp::BeaconListener([this, &api](const xplaneudpcpp::BeaconListener::ServerInfo& info)
+        {
+            api.runOnLuaThread([this, info] {
+                m_xplaneClient = std::make_unique<xplaneudpcpp::UDPClient>(info.host, info.port);
+                if (m_xplaneConnectCallback) m_xplaneConnectCallback(true);
+            });
+
+            return true;
+        }));
+    };
+
 }

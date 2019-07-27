@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ActiveObject.h"
+#include "../XPlaneUDPClientCpp/ActiveObject.h"
 #include "LuaModule.h"
 
 #include <filesystem>
@@ -22,8 +22,8 @@ public:
     void addModule(LuaModule& module);
     void init();
 
-    void readFromSim(DWORD offset, DWORD size, void* data);
-    void writeToSim(DWORD offset, DWORD size, const void* data);
+    void readFromSim(uint32_t offset, uint32_t size, void* data);
+    void writeToSim(uint32_t offset, uint32_t size, const void* data);
 
 private:
 

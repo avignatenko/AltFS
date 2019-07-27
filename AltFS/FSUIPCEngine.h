@@ -4,8 +4,8 @@
 #include <memory>
 #include <filesystem>
 
-#include "LuaEngine.h"
-#include "LuaXPlane.h"
+#include "../LuaEngine/LuaEngine.h"
+#include "../LuaEngine/LuaXPlane.h"
 
 class FSUIPCEngine
 {

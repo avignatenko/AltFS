@@ -32,7 +32,7 @@ LuaEngine::~LuaEngine()
 
 }
 
-void LuaEngine::readFromSim(DWORD offset, DWORD size, void* data)
+void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
 {
     std::promise<void> retval;
 
@@ -67,7 +67,7 @@ void LuaEngine::readFromSim(DWORD offset, DWORD size, void* data)
 
 }
 
-void LuaEngine::writeToSim(DWORD offset, DWORD size, const void * data)
+void LuaEngine::writeToSim(uint32_t offset, uint32_t size, const void * data)
 {
     // copy data
     std::vector<uint8_t> dataVec((uint8_t*)data, (uint8_t*)data + size);
@@ -86,6 +86,9 @@ void LuaEngine::writeToSim(DWORD offset, DWORD size, const void * data)
                 break;
             case 2: // uint16
                 offsetTable.value()["write"](*reinterpret_cast<const uint16_t*>(dataVec.data()));
+                break;
+            case 6: // sint16
+                offsetTable.value()["write"](*reinterpret_cast<const int16_t*>(dataVec.data()));
                 break;
             }
         }
