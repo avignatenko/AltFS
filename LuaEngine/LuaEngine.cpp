@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "LuaEngine.h"
 #include "LuaModule.h"
+#include "OffsetStatsGenerator.h"
 
 #define SOL_ALL_SAFETIES_ON 1
 #include <sol/sol.hpp>
@@ -9,9 +10,10 @@
 
 #include <future>
 
-LuaEngine::LuaEngine(const std::filesystem::path & scriptPath)
+LuaEngine::LuaEngine(const std::filesystem::path& scriptPath)
     : m_lua(std::make_unique<sol::state>())
     , m_scriptPath(scriptPath)
+    , m_stats(std::make_unique<OffsetStatsGenerator>(scriptPath / "stats.csv"))
 {
     m_dispatchQueue.put([this]
     {
@@ -26,7 +28,7 @@ LuaEngine::LuaEngine(const std::filesystem::path & scriptPath)
         
         try
         {
-            auto result1 = lua().safe_script_file(m_scriptPath.string());
+            auto result1 = lua().safe_script_file((m_scriptPath / "script.lua").string());
         }
         catch (const sol::error& e)
         {
@@ -58,7 +60,7 @@ void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
 {
     std::promise<void> retval;
 
-    m_dispatchQueue.put([this, offset, data, &retval]
+    m_dispatchQueue.put([this, offset, data, size, &retval]
     {
         sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
         if (offsetTable.has_value())
@@ -84,6 +86,12 @@ void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
                 *reinterpret_cast<uint16_t*>(data) = value;
                 break;
             }
+            case 3:
+            {
+                float value = offsetTable.value()[2]();
+                *reinterpret_cast<uint32_t*>(data) = value;
+                break;
+            }
             case 6:
             {
                 float value = offsetTable.value()[2]();
@@ -94,6 +102,11 @@ void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
             }
             
         }
+        else
+        {
+            m_stats->reportUnknownOffset(offset, size, false);
+        }
+        
         retval.set_value();
     });
 
@@ -108,7 +121,7 @@ void LuaEngine::writeToSim(uint32_t offset, uint32_t size, const void * data)
     std::vector<uint8_t> dataVec((uint8_t*)data, (uint8_t*)data + size);
 
     // put to queue
-    m_dispatchQueue.put([this, dataVec, offset]
+    m_dispatchQueue.put([this, dataVec, size, offset]
     {
         sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
         if (offsetTable.has_value())
@@ -126,6 +139,10 @@ void LuaEngine::writeToSim(uint32_t offset, uint32_t size, const void * data)
                 offsetTable.value()[3](*reinterpret_cast<const int16_t*>(dataVec.data()));
                 break;
             }
+        }
+        else
+        {
+            m_stats->reportUnknownOffset(offset, size, true);
         }
     });
 

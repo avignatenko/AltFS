@@ -6,9 +6,10 @@
 #include "AltFS.h"
 #include "AltFSDlg.h"
 #include "FSUIPCEngine.h"
-
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
+
+#include <iostream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -51,7 +52,6 @@ BOOL CAltFSApp::InitInstance()
     // Set the default logger to file logger
     spdlog::set_level(spdlog::level::debug); // Set global log level to debug
     
-    
     auto logFilename = exePath / "altfs.log";
     auto file_logger = spdlog::basic_logger_mt("basic_logger", logFilename.string());
     spdlog::set_default_logger(file_logger);
@@ -85,10 +85,22 @@ BOOL CAltFSApp::InitInstance()
 
   
 
+    if (AllocConsole())
+	{
+		FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
+
+		freopen_s(&fpstdin, "CONIN$", "r", stdin);
+		freopen_s(&fpstdout, "CONOUT$", "w", stdout);
+		freopen_s(&fpstderr, "CONOUT$", "w", stderr);
+
+		std::cout << "This is a test of the attached console" << std::endl;
+		//FreeConsole();
+	}
+
 	// Standard initialization
 	SetRegistryKey(_T("Alexey Ignatenko"));
 
-    FSUIPCEngine engine((exePath / "lua" / "script.lua").string());
+    FSUIPCEngine engine((exePath / "lua").string());
 	CAltFSDlg dlg(engine);
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();

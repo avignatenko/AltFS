@@ -40,6 +40,7 @@ public:
         , type_(type)
         , freq_(freq)
     {
+        LuaXPlane::s_instance->xplaneClient_->unsubscribeDataref(path_);
     }
 
     float read()

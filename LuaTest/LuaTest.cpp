@@ -5,9 +5,16 @@
 
 #include "../LuaEngine/LuaEngine.h"
 #include "../LuaEngine/LuaXPlane.h"
+#include "../LuaEngine/OffsetStatsGenerator.h"
+
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include <filesystem>
 #include <iostream>
+#include <future>
 
 
 class Timer
@@ -61,26 +68,49 @@ private:
 
 int main(int argc, char** argv)
 {
+    bool s_exit = false;
+    DispatchQueue d;
+
     std::filesystem::path exePath(argv[0]);
 
-    LuaEngine m_lua(exePath.parent_path() / "lua" / "script.lua");
+    // Set the default logger to file logger
+    spdlog::set_level(spdlog::level::debug); // Set global log level to debug
+    
+    auto logFilename = exePath.parent_path() / "altfs.log";
+   // auto file_logger = spdlog::basic_logger_mt("basic_logger", logFilename.string());
+    auto console = spdlog::stdout_color_mt("console");   
+    spdlog::set_default_logger(console);
+
+    spdlog::info("AltFs started");
+
+    LuaEngine m_lua(exePath.parent_path() / "lua");
     LuaXPlane m_xPlaneModule(m_lua);
     
-    // event cycle version
-
-    DispatchQueue d;
-    bool finished = false;
-
     int16_t currentposition = -16383;
 
     Timer t(std::chrono::milliseconds(10), d, [&]
     {
+        // read
+        int32_t data32;
+        int16_t data16;
+        int8_t data8;
+
+        m_lua.readFromSim(0x0bc0, 2, &data16);
+        //m_lua.readFromSim(0x07bc, 4, &data32);
+        //m_lua.readFromSim(0x07d0, 4, &data32);
+        //m_lua.readFromSim(0x0840, 2, &data16);
+        //m_lua.readFromSim(0x0bc0, 2, &data16);
+        //m_lua.readFromSim(0x3364, 1, &data8);
+        m_lua.readFromSim(0x3365, 1, &data8);
+        std::cout << "pos: " << data16 << " " << std::endl;
+	
         // write
-         m_lua.writeToSim(0x0BB2, 2, &currentposition);
-         m_lua.writeToSim(0x0BB6, 2, &currentposition);
+        // m_lua.writeToSim(0x0BB2, 2, &currentposition);
+        // m_lua.writeToSim(0x0BB6, 2, &currentposition);
+        // m_lua.writeToSim(0x0BB1, 2, &currentposition);
 
          if (currentposition >= 16383) 
-             finished = true;
+             s_exit = true;
          else
             ++currentposition;
 
@@ -89,7 +119,7 @@ int main(int argc, char** argv)
          int16_t pos0, pos1;
          m_lua.readFromSim(0x0BB2, 2, &pos0);
          m_lua.readFromSim(0x0BB6, 2, &pos1);
-         std::cout << "pos: " << pos0 << " " << pos1 << std::endl;
+         //std::cout << "pos: " << pos0 << " " << pos1 << std::endl;
 
     });
 
@@ -98,7 +128,9 @@ int main(int argc, char** argv)
     m_xPlaneModule.init();
     m_lua.init();
   
-    while (!finished)
+   
+
+    while (!s_exit)
         d.take()();
 
     // sync version
@@ -128,4 +160,5 @@ int main(int argc, char** argv)
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     */
+
 }

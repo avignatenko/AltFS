@@ -152,12 +152,14 @@
     <ClInclude Include="LuaEngine.h" />
     <ClInclude Include="LuaModule.h" />
     <ClInclude Include="LuaXPlane.h" />
+    <ClInclude Include="OffsetStatsGenerator.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LuaEngine.cpp" />
     <ClCompile Include="LuaXPlane.cpp" />
+    <ClCompile Include="OffsetStatsGenerator.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -6,6 +6,10 @@
 #include <array>
 #include <deque>
 
+#include <spdlog/spdlog.h>
+
+#include <boost/asio/error.hpp>
+
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
@@ -42,6 +46,7 @@ public:
         : endpointRemote_(udp::endpoint(address::from_string(addressRemote), portRemote))
         , Client(io, portThis)
     {
+        spdlog::info("X-Plane UDP Sender client init");
     }
 
 #pragma pack (push, r1, 1)
@@ -55,6 +60,8 @@ public:
 
     void writeDataref(const std::string& dataref, float f)
     {
+        spdlog::debug("X-Plane UDP Client send dataref {}  {}", dataref, f);
+
         m_dispatchQueue.put([this, dataref, f]()
         {
             SendFloatDataref data;
@@ -79,6 +86,8 @@ public:
 
     void subscribeDataref(const std::string & dataref, int freq, int num)
     {
+        spdlog::debug("X-Plane UDP Sender subscribe dataref {} with freq {} and num {}", dataref, freq, num);
+
         m_dispatchQueue.put([this, dataref, freq, num]()
         {
             SubscribeDataref data;
@@ -94,6 +103,24 @@ public:
 
     }
 
+    void unsubscribeDataref(const std::string & dataref)
+    {
+        spdlog::debug("X-Plane UDP Sender unsubscribe dataref {} ", dataref);
+
+        m_dispatchQueue.put([this, dataref]()
+        {
+            SubscribeDataref data;
+            strcpy(data.id, "RREF");
+            data.freq = 0;
+            data.num = 0;
+
+            strcpy(data.refName, dataref.c_str());
+            std::memset(data.refName + dataref.length() + 1, 0, 400 - dataref.length() - 1);
+
+            socket_.send_to(buffer(&data, sizeof(data)), endpointRemote_);
+        });
+
+    }
 private:
     ip::udp::endpoint endpointRemote_;
 };
@@ -104,11 +131,14 @@ public:
     ClientReceiver(io_service& io, int portThis)
         : Client(io, portThis)
     {
+        spdlog::info("X-Plane UDP Receiver client init");
         doReceive();
     }
 
     int subscribeDataref(const std::string& dataref, std::function<void(float)> callback)
     {
+         spdlog::debug("X-Plane UDP Receiver client subscribe dataref {}", dataref);
+
          std::lock_guard<std::mutex> lock(lock_);
          datarefs_.push_back(callback);
          return datarefs_.size() - 1;
@@ -174,6 +204,9 @@ private:
             }
             catch (boost::system::system_error& error)
             {
+                if (error.code() == boost::asio::error::interrupted)
+                    return; // just normal termination
+
                 throw error;
             }
         });
@@ -187,17 +220,24 @@ private:
 
 xplaneudpcpp::UDPClient::UDPClient(const std::string& address, int port)
 {
+    spdlog::info("X-Plane UDP Client created with address {}:{}", address, port);
+    const int localPort = 50000;
+    spdlog::info("X-Plane UDP Client local port is {}", localPort);
 
-    m_clientReceiver = std::make_unique<ClientReceiver>(io_, 50000);
-    m_clientSender = std::make_unique<ClientSender>(io_, 50000, address, port);
+    m_clientReceiver = std::make_unique<ClientReceiver>(io_, localPort);
+    m_clientSender = std::make_unique<ClientSender>(io_, localPort, address, port);
 }
 
 xplaneudpcpp::UDPClient::~UDPClient()
 {
+    spdlog::info("X-Plane UDP Client shutdown attempt...");
+
     io_.stop();
 
     m_clientReceiver.reset();
     m_clientSender.reset();
+
+    spdlog::info("X-Plane UDP Client shutdown successful");
 
 }
 
@@ -208,8 +248,14 @@ void xplaneudpcpp::UDPClient::writeDataref(const std::string & dataref, float f)
 
 void xplaneudpcpp::UDPClient::subscribeDataref(const std::string & dataref, int freq, std::function<void(float)> callback)
 {
+
     int num = m_clientReceiver->subscribeDataref(dataref, callback);
     m_clientSender->subscribeDataref(dataref, freq, num);
+}
+
+void UDPClient::unsubscribeDataref(const std::string & dataref)
+{
+    m_clientSender->unsubscribeDataref(dataref);
 }
 
 }

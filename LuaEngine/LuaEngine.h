@@ -7,6 +7,7 @@
 
 namespace sol { class state; }
 
+class OffsetStatsGenerator;
 
 class LuaEngine : public ActiveObject, public LuaModuleAPI
 {
@@ -32,5 +33,6 @@ private:
 
     std::unique_ptr<sol::state> m_lua;
     std::filesystem::path m_scriptPath;
+    std::unique_ptr<OffsetStatsGenerator> m_stats;
 
 };

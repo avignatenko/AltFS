@@ -4,6 +4,8 @@
 #include <boost/bind.hpp>
 #include <utility>
 
+#include <spdlog/spdlog.h>
+
 namespace
 {
 
@@ -34,6 +36,8 @@ public:
             boost::bind(&receiver::handle_receive_from, this,
                       boost::asio::placeholders::error,
                       boost::asio::placeholders::bytes_transferred));
+
+        spdlog::info("BeaconListener created, listening started");
     }
 private:
 
@@ -56,6 +60,8 @@ private:
         const boost::system::error_code& error,
         size_t bytes_recvd)
     {
+        spdlog::info("Multicast data refeived");
+
         if (!error)
         {
             bool found = false;
@@ -70,11 +76,17 @@ private:
                 serverInfo.host = sender_endpoint_.address().to_string();
                 serverInfo.port = becn.port;
 
+                spdlog::info("Data parsed as X-Plane data: host {}, port: {}", serverInfo.host, serverInfo.port);
+                spdlog::info("Running callback...");
+                
                 found = m_callback(serverInfo);
+
+                spdlog::info("Callback returned {}", found);
             } 
 
             if (!found)
             {
+                spdlog::info("Continue listening", found);
                 socket_.async_receive_from(
                     boost::asio::buffer(data_.data(), max_length), sender_endpoint_,
                     boost::bind(&receiver::handle_receive_from, this,
