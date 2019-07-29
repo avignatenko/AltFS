@@ -94,13 +94,13 @@ int main(int argc, char** argv)
         int32_t data32;
         int16_t data16;
         int8_t data8;
-
+        
         m_lua.readFromSim(0x0bc0, 2, &data16);
-        //m_lua.readFromSim(0x07bc, 4, &data32);
-        //m_lua.readFromSim(0x07d0, 4, &data32);
-        //m_lua.readFromSim(0x0840, 2, &data16);
-        //m_lua.readFromSim(0x0bc0, 2, &data16);
-        //m_lua.readFromSim(0x3364, 1, &data8);
+        m_lua.readFromSim(0x07bc, 4, &data32);
+        m_lua.readFromSim(0x07d0, 4, &data32);
+        m_lua.readFromSim(0x0840, 2, &data16);
+        m_lua.readFromSim(0x0bc0, 2, &data16);
+        m_lua.readFromSim(0x3364, 1, &data8);
         m_lua.readFromSim(0x3365, 1, &data8);
         std::cout << "pos: " << data16 << " " << std::endl;
 	

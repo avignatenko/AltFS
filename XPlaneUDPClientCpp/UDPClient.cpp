@@ -103,16 +103,16 @@ public:
 
     }
 
-    void unsubscribeDataref(const std::string & dataref)
+    void unsubscribeDataref(const std::string& dataref, int num)
     {
         spdlog::debug("X-Plane UDP Sender unsubscribe dataref {} ", dataref);
 
-        m_dispatchQueue.put([this, dataref]()
+        m_dispatchQueue.put([this, dataref, num]()
         {
             SubscribeDataref data;
             strcpy(data.id, "RREF");
             data.freq = 0;
-            data.num = 0;
+            data.num = num;
 
             strcpy(data.refName, dataref.c_str());
             std::memset(data.refName + dataref.length() + 1, 0, 400 - dataref.length() - 1);
@@ -135,25 +135,42 @@ public:
         doReceive();
     }
 
-    int subscribeDataref(const std::string& dataref, std::function<void(float)> callback)
+    int getDatarefNum(const std::string& dataref) 
+    { 
+        std::lock_guard<std::mutex> lock(lock_);
+
+        auto found = std::find_if(datarefs_.begin(), datarefs_.end(), [&dataref](const auto& elem)
+        {
+            return elem.first == dataref;
+        });
+        if (found == datarefs_.end())
+        {
+            datarefs_.push_back({dataref, nullptr});
+            return datarefs_.size() - 1;
+        }
+
+        return found - datarefs_.begin();
+    }
+
+    void subscribeDataref(const std::string& dataref, std::function<void(float)> callback)
     {
          spdlog::debug("X-Plane UDP Receiver client subscribe dataref {}", dataref);
 
-         std::lock_guard<std::mutex> lock(lock_);
-         datarefs_.push_back(callback);
-         return datarefs_.size() - 1;
+         int index = getDatarefNum(dataref);
 
-        /*
-        std::promise<int> retval;
-        m_dispatchQueue.put([this, &retval, &dataref, &callback]
-        {
-            datarefs_.push_back(callback);
-            retval.set_value(datarefs_.size() - 1);
-        });
-        
-        return retval.get_future().get();*/
+         std::lock_guard<std::mutex> lock(lock_);
+         datarefs_[index].second = callback;
     }
 
+     void unsubscribeDataref(const std::string& dataref)
+    {
+         spdlog::debug("X-Plane UDP Receiver client unsubscribe dataref {}", dataref);
+
+         int index = getDatarefNum(dataref);
+
+         std::lock_guard<std::mutex> lock(lock_);
+         datarefs_[index].second = nullptr;
+    }
 private:
 
     #pragma pack (push, r1, 1)
@@ -196,8 +213,9 @@ private:
                 {
                     const ReceiveDataref::Value& valueData = message->value[i];
                     if (valueData.num < 0 || valueData.num >= (int)datarefs_.size()) continue; // fixme: what's that?                   
-                    auto& callback = datarefs_[valueData.num];
-                    callback(valueData.value);
+                    auto& dataref = datarefs_[valueData.num];
+                    if (dataref.second) // subscribed?
+                       dataref.second(valueData.value);
                 }
 
                 doReceive();
@@ -215,7 +233,7 @@ private:
 private:
 
     std::mutex lock_;
-    std::deque<std::function<void(float)>> datarefs_;
+    std::deque<std::pair<std::string, std::function<void(float)>>> datarefs_;
 };
 
 xplaneudpcpp::UDPClient::UDPClient(const std::string& address, int port)
@@ -246,16 +264,22 @@ void xplaneudpcpp::UDPClient::writeDataref(const std::string & dataref, float f)
     m_clientSender->writeDataref(dataref, f);
 }
 
+int UDPClient::getDatarefNum(const std::string & dataref)
+{
+     return m_clientReceiver->getDatarefNum(dataref);
+}
+
 void xplaneudpcpp::UDPClient::subscribeDataref(const std::string & dataref, int freq, std::function<void(float)> callback)
 {
 
-    int num = m_clientReceiver->subscribeDataref(dataref, callback);
-    m_clientSender->subscribeDataref(dataref, freq, num);
+    m_clientReceiver->subscribeDataref(dataref, callback);
+    m_clientSender->subscribeDataref(dataref, freq, m_clientReceiver->getDatarefNum(dataref));
 }
 
 void UDPClient::unsubscribeDataref(const std::string & dataref)
 {
-    m_clientSender->unsubscribeDataref(dataref);
+    m_clientSender->unsubscribeDataref(dataref, m_clientReceiver->getDatarefNum(dataref));
+    m_clientReceiver->unsubscribeDataref(dataref);
 }
 
 }

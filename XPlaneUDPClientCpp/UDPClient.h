@@ -21,6 +21,8 @@ public:
     ~UDPClient();
 
     void writeDataref(const std::string& dataref, float f);
+    
+    int getDatarefNum(const std::string& dataref);
     void subscribeDataref(const std::string& dataref, int freq, std::function<void(float)> callback);
     void unsubscribeDataref(const std::string& dataref);
 private:
