@@ -5,6 +5,7 @@
 #include <atomic>
 #include <memory>
 
+#define PM_MULTITHREAD
 #include "../promise-cpp/promise.hpp"
 
 class DispatchQueue
@@ -53,7 +54,7 @@ class Runner
 {
 public:
 
-    virtual bool runOnThread(std::function<void()> func) = 0;
+    virtual bool run(std::function<void()> func) = 0;
 
     thread_local static Runner* threadInstance;
 };
@@ -63,7 +64,7 @@ class ActiveObject: public Runner
 public:
     ActiveObject()
     {
-        m_runnable = std::make_unique<std::thread>(&ActiveObject::run, this);
+        m_runnable = std::make_unique<std::thread>(&ActiveObject::messageCycle, this);
     }
 
     virtual ~ActiveObject()
@@ -72,7 +73,7 @@ public:
         m_runnable->join();
     }
 
-    bool runOnThread(std::function<void()> func) override
+    bool run(std::function<void()> func) override
     {
         if (m_done) return false;
         m_dispatchQueue.put(func);
@@ -86,10 +87,10 @@ private:
 
     void stop()
     {
-        runOnThread(nullptr);
+        run(nullptr);
     }
 
-    void run()
+    void messageCycle()
     {
 
         threadInstance = this;
@@ -128,7 +129,7 @@ inline promise::Defer newPromiseAsync(Runner* runner, FUNC func)
     promise::Defer promise = promise::newPromise();
     promise->run([=](promise::Defer& d)
     {
-        runner->runOnThread([=, caller = Runner::threadInstance]
+        runner->run([=, caller = Runner::threadInstance]
         {
             func(caller, d);
         });

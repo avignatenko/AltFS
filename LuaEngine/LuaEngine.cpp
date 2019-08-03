@@ -25,15 +25,7 @@ LuaEngine::~LuaEngine()
     // run final stuff
     if (m_initialized)
     {
-        std::promise<bool> retval;
-        bool result = runOnThread([this, &retval]
-        {
-            if (isDone()) { retval.set_value(false); return; }
-
-            bool result = lua()["shutdown"]();
-            retval.set_value(result);
-        });
-        result = !result || retval.get_future().get();
+      // ...
     }
 
 }
@@ -58,88 +50,96 @@ promise::Defer LuaEngine::load()
             sol::error err = result;
             spdlog::critical("An error occurred: {}", err.what());
 
-            caller->runOnThread([d, err] 
-            { 
-                d.reject(std::string(err.what())); 
+            caller->run([d, err]
+            {
+                d.reject(std::string(err.what()));
             });
         }
         else
         {
             m_initialized = true;
-           caller->runOnThread([d] {   d.resolve(); });
+            caller->run([d] {   d.resolve(); });
         }
-      
+
 
     });
-   
+
 }
 
-void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
+promise::Defer LuaEngine::readFromSim(uint32_t offset, uint32_t size, std::byte* data)
 {
-    std::promise<void> retval;
-
-    runOnThread([this, offset, data, size, &retval]
+    return promise::newPromise([this, offset, size, data](promise::Defer& d)
     {
-        sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
-        if (offsetTable.has_value())
-        {
-            int type = offsetTable.value()[1];
-            switch (type)
+        std::promise<bool> retval;
+
+        run([this, offset, size, data, &retval]
+        {      
+            sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
+            if (offsetTable.has_value())
             {
-            case 11:
-            {
-                std::string value = offsetTable.value()[2]();
-                std::copy(value.begin(), value.end(), (uint8_t*)data);
-                break;
-            }
-            case 1:
-            {
-                float value = offsetTable.value()[2]();
-                *reinterpret_cast<uint8_t*>(data) = value;
-                break;
-            }
-            case 2:
-            {
-                float value = offsetTable.value()[2]();
-                *reinterpret_cast<uint16_t*>(data) = value;
-                break;
-            }
-            case 3:
-            {
-                float value = offsetTable.value()[2]();
-                *reinterpret_cast<uint32_t*>(data) = value;
-                break;
-            }
-            case 6:
-            {
-                float value = offsetTable.value()[2]();
-                *reinterpret_cast<int16_t*>(data) = value;
-                break;
-            }
+                int type = offsetTable.value()[1];
+                switch (type)
+                {
+                case 11:
+                {
+                    std::string value = offsetTable.value()[2]();
+                    std::copy(value.begin(), value.end(), (uint8_t*)data);
+                    break;
+                }
+                case 1:
+                {
+                    float value = offsetTable.value()[2]();
+                    *reinterpret_cast<uint8_t*>(data) = value;
+                    break;
+                }
+                case 2:
+                {
+                    float value = offsetTable.value()[2]();
+                    *reinterpret_cast<uint16_t*>(data) = value;
+                    break;
+                }
+                case 3:
+                {
+                    float value = offsetTable.value()[2]();
+                    *reinterpret_cast<uint32_t*>(data) = value;
+                    break;
+                }
+                case 6:
+                {
+                    float value = offsetTable.value()[2]();
+                    *reinterpret_cast<int16_t*>(data) = value;
+                    break;
+                }
+
+                }
+
+                retval.set_value(true);
 
             }
+            else
+            {
+                m_stats->reportUnknownOffset(offset, size, false);
+                retval.set_value(false);
+            }
 
-        }
-        else
-        {
-            m_stats->reportUnknownOffset(offset, size, false);
-        }
+    
+        });
 
-        retval.set_value();
+        // wait
+        bool result = retval.get_future().get();
+
+        if (result) d.resolve(); else d.reject();
     });
 
-    // wait
-    retval.get_future().get();
+
 
 }
 
-void LuaEngine::writeToSim(uint32_t offset, uint32_t size, const void * data)
+promise::Defer LuaEngine::writeToSim(uint32_t offset, uint32_t size, const std::byte* data)
 {
-    // copy data
-    std::vector<uint8_t> dataVec((uint8_t*)data, (uint8_t*)data + size);
+     std::vector<std::byte> dataVec(data, data + size);
 
-    // put to queue
-    runOnThread([this, dataVec, size, offset]
+    return newPromiseAsync(this, [this, offset, dataVec](Runner* caller, promise::Defer d)
     {
         sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
         if (offsetTable.has_value())
@@ -157,24 +157,15 @@ void LuaEngine::writeToSim(uint32_t offset, uint32_t size, const void * data)
                 offsetTable.value()[3](*reinterpret_cast<const int16_t*>(dataVec.data()));
                 break;
             }
+
+            d.resolve();
         }
         else
         {
-            m_stats->reportUnknownOffset(offset, size, true);
+            m_stats->reportUnknownOffset(offset, dataVec.size(), true);
+            d.reject();
         }
     });
 
-}
 
-promise::Defer LuaEngine::init()
-{
-    return newPromiseAsync(this, [this](Runner* caller, promise::Defer d)
-    {
-        if (isDone()) return;
-
-        // initialize lua script
-        bool result = lua()["initialize"]();
-
-        caller->runOnThread([d] {   d.resolve(); });
-    });
 }

@@ -18,14 +18,13 @@ public:
 
     // lua module api
     virtual sol::state& getLua() override { return lua();}
-    virtual void runOnLuaThread(std::function<void()> func) override {runOnThread(func);}
+    virtual Runner* getLuaRunner() override { return this;}
 
     // own
     promise::Defer load();
-    promise::Defer init();
 
-    void readFromSim(uint32_t offset, uint32_t size, void* data);
-    void writeToSim(uint32_t offset, uint32_t size, const void* data);
+    promise::Defer readFromSim(uint32_t offset, uint32_t size, std::byte* data);
+    promise::Defer writeToSim(uint32_t offset, uint32_t size, const std::byte* data);
 
 private:
 

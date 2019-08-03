@@ -1,6 +1,8 @@
 #include "stdafx.h" 
 
 #include "FSUIPCEngine.h"
+#include "../XPlaneUDPClientCpp/BeaconListener.h"
+
 #include <spdlog/spdlog.h>
 
 #pragma pack (push, r1, 1)
@@ -51,19 +53,17 @@ FSUIPCEngine::~FSUIPCEngine()
 
 promise::Defer FSUIPCEngine::init()
 {
-    return promise::newPromise([this](promise::Defer& p)
+   
+    /*
+    m_xPlaneModule.discover()
+    .then([this](xplaneudpcpp::BeaconListener::ServerInfo& info)
     {
-        m_lua.load().then([this, p]
-        {
-            m_xPlaneModule.init();
-            m_lua.init();
-            p.resolve();
-        }).fail([this, p](std::string e)
-        {
-            p.reject(e);
-        });
-    });
-
+        return m_xPlaneModule.connect(info.host, info.port);
+    })*/
+    return 
+        m_xPlaneModule.connect("192.168.114", 49000)
+        .then([&]{m_xPlaneModule.init();})
+        .then([&]{m_lua.load();});
 }
 
 LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
@@ -149,7 +149,7 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
         return;
     }
 
-    m_lua.readFromSim(offset, size, data);
+    m_lua.readFromSim(offset, size, static_cast<std::byte*>(data));
 
 }
 
@@ -158,6 +158,6 @@ void FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
 {
     spdlog::debug("Write request, offset 0x{0:04#x}, size {1}", offset, size);
 
-    m_lua.writeToSim(offset, size, data);
+    m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
 }
 

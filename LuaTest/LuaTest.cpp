@@ -7,6 +7,9 @@
 #include "../LuaEngine/LuaXPlane.h"
 #include "../LuaEngine/OffsetStatsGenerator.h"
 
+#include "../XPlaneUDPClientCpp/ActiveObject.h"
+#include "../XPlaneUDPClientCpp/BeaconListener.h"
+
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
@@ -21,7 +24,7 @@ class Timer
 {
 public:
 
-    Timer(std::chrono::milliseconds delay, DispatchQueue& d, std::function<void()> callback)
+    Timer(std::chrono::milliseconds delay, Runner* d, std::function<void()> callback)
         : delay_(delay), callback_(callback), d_(d)
     {
 
@@ -38,7 +41,7 @@ public:
             while (!m_finished)
             {
                 std::this_thread::sleep_for(delay_ );
-                d_.put([this]{callback_();});
+                d_->run([this]{callback_();});
             }
         });
 
@@ -63,13 +66,58 @@ private:
 
     std::chrono::milliseconds delay_;
     std::function<void()> callback_;
-    DispatchQueue& d_;
+    Runner* d_;
+};
+
+class QueueRunner: public Runner
+{
+public:
+    QueueRunner()
+    {
+        threadInstance = this;
+    }
+    ~QueueRunner()
+    {
+        threadInstance = nullptr;
+    }
+
+    virtual bool run(std::function<void()> func) 
+    {
+        m_dispatchQueue.put(func);
+        return true;
+    }
+
+    void run()
+    {
+        while (!m_done)
+        {
+            auto functor = m_dispatchQueue.take();
+            if (functor)
+                functor();
+            else
+                m_done = true;
+        }
+
+        // dispatch remaing functions
+        while (auto functor = m_dispatchQueue.takeNonBlocking())
+            functor();
+    }
+
+    void stop()
+    {
+        run(nullptr);
+    }
+    
+private:
+
+    DispatchQueue m_dispatchQueue;
+     std::atomic<bool> m_done = false;
 };
 
 int main(int argc, char** argv)
 {
     bool s_exit = false;
-    DispatchQueue d;
+    QueueRunner d;
 
     std::filesystem::path exePath(argv[0]);
 
@@ -88,26 +136,26 @@ int main(int argc, char** argv)
     
     int16_t currentposition = -16383;
 
-    Timer t(std::chrono::milliseconds(10), d, [&]
+    Timer t(std::chrono::milliseconds(10), &d, [&]
     {
         // read
         int32_t data32;
         int16_t data16;
         int8_t data8;
         
-        m_lua.readFromSim(0x0bc0, 2, &data16);
-        m_lua.readFromSim(0x07bc, 4, &data32);
-        m_lua.readFromSim(0x07d0, 4, &data32);
-        m_lua.readFromSim(0x0840, 2, &data16);
-        m_lua.readFromSim(0x0bc0, 2, &data16);
-        m_lua.readFromSim(0x3364, 1, &data8);
-        m_lua.readFromSim(0x3365, 1, &data8);
-        std::cout << "pos: " << data16 << " " << std::endl;
+        //m_lua.readFromSim(0x0bc0, 2, (std::byte*)&data16);
+        //m_lua.readFromSim(0x07bc, 4, (std::byte*)&data32);
+        //m_lua.readFromSim(0x07d0, 4, (std::byte*)&data32);
+        //m_lua.readFromSim(0x0840, 2, (std::byte*)&data16);
+        //m_lua.readFromSim(0x0bc0, 2, (std::byte*)&data16);
+        //m_lua.readFromSim(0x3364, 1, (std::byte*)&data8);
+        //m_lua.readFromSim(0x3365, 1, (std::byte*)&data8);
+        //std::cout << "pos: " << data16 << " " << std::endl;
 	
         // write
-        // m_lua.writeToSim(0x0BB2, 2, &currentposition);
-        // m_lua.writeToSim(0x0BB6, 2, &currentposition);
-        // m_lua.writeToSim(0x0BB1, 2, &currentposition);
+         m_lua.writeToSim(0x0BB2, 2, (std::byte*)&currentposition);
+         m_lua.writeToSim(0x0BB6, 2, (std::byte*)&currentposition);
+        // m_lua.writeToSim(0x0BB1, 2, (std::byte*)&currentposition);
 
          if (currentposition >= 16383) 
              s_exit = true;
@@ -117,48 +165,23 @@ int main(int argc, char** argv)
          // read
 
          int16_t pos0, pos1;
-         m_lua.readFromSim(0x0BB2, 2, &pos0);
-         m_lua.readFromSim(0x0BB6, 2, &pos1);
-         //std::cout << "pos: " << pos0 << " " << pos1 << std::endl;
+         m_lua.readFromSim(0x0BB2, 2, (std::byte*)&pos0);
+         m_lua.readFromSim(0x0BB6, 2, (std::byte*)&pos1);
+         std::cout << "pos: " << pos0 << " " << pos1 << std::endl;
 
     });
 
-    m_xPlaneModule.addConnectedCallback([&](bool) {  d.put([&]{ t.start();}); });
+     m_xPlaneModule.discover()
+        .then([&](xplaneudpcpp::BeaconListener::ServerInfo& info)
+        {
+            return m_xPlaneModule.connect(info.host, info.port);
+        })
+     //m_xPlaneModule.connect("192.168.114", 49000)
+        .then([&]{m_xPlaneModule.init();})
+        .then([&]{m_lua.load();})
+        .then([&]{d.run([&]{ t.start();}); });
 
-    m_xPlaneModule.init();
-    m_lua.init();
-  
    
-
-    while (!s_exit)
-        d.take()();
-
-    // sync version
-
-    /*
-    std::mutex qlock;
-    std::condition_variable m_notConnected;
-    bool connected = false;
-
-    m_xPlaneModule.setConnectedCallback([&](bool)
-    {
-        std::lock_guard<std::mutex> guard(qlock);
-        connected = true;
-        m_notConnected.notify_one();
-    });
-
-    m_lua.addModule(m_xPlaneModule);
-    m_lua.init();
-
-    // wait for connection
-    std::unique_lock<std::mutex> lock(qlock);
-    m_notConnected.wait(lock, [&] { return connected; });
-
-    for (int16_t i = -16383; i <= 16383; ++i)
-    {
-        m_lua.writeToSim(0x0BB2, 2, &i);
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-    */
+     d.run();
 
 }

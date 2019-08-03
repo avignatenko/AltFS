@@ -52,7 +52,7 @@ public:
         Runner::threadInstance = nullptr;
     }
 
-    virtual bool runOnThread(std::function<void()> f)  override
+    virtual bool run(std::function<void()> f)  override
     {
         std::function<void()>* func = new std::function<void()>(f);
         AfxGetApp()->PostThreadMessage(WM_USER + 1, WPARAM(func), 0);
@@ -127,11 +127,12 @@ BOOL CAltFSApp::InitInstance()
     CAltFSDlg dlg(engine);
     m_pMainWnd = &dlg;
 
-     engine.init().fail([&dlg](std::string e)
-    {
-        ::MessageBox(NULL, CString("Fatal error: ") + e.c_str(), "Error", MB_OK);
-        dlg.EndDialog(-1);
-    });
+    engine.init()
+        .fail([&dlg](std::string e)
+        {
+            ::MessageBox(NULL, CString("Fatal error: ") + e.c_str(), "Error", MB_OK);
+            dlg.EndDialog(-1);
+        });
 
     INT_PTR nResponse = dlg.DoModal();
     if (nResponse == -1)

@@ -5,6 +5,9 @@
 #include <memory>
 namespace xplaneudpcpp { class BeaconListener; class UDPClient;}
 
+#define PM_MULTITHREAD
+#include "../promise-cpp/promise.hpp"
+
 class LuaXPlane
 {
 public:
@@ -12,12 +15,11 @@ public:
     LuaXPlane(LuaModuleAPI& api);
     ~LuaXPlane();
 
-    void init();
+    promise::Defer discover();
+    promise::Defer connect(const std::string& address, int port);
 
-    using XPlaneConnectCallback = std::function<void(bool)>;
+    promise::Defer init();
 
-    void addConnectedCallback(XPlaneConnectCallback callback) { xplaneConnectCallback_.push_back(callback); }
-    
     bool isConnected() const { return xplaneClient_ != nullptr; }
 
 private:
@@ -25,7 +27,6 @@ private:
     // x-plane
     std::unique_ptr<xplaneudpcpp::BeaconListener> xplaneDiscoverer_;
     std::unique_ptr<xplaneudpcpp::UDPClient> xplaneClient_;
-    std::vector<XPlaneConnectCallback>  xplaneConnectCallback_;
 
     LuaModuleAPI& api_;
 
