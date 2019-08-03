@@ -35,8 +35,7 @@ FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
     : m_lua(scriptPath), m_xPlaneModule(m_lua)
    
 {
-    m_xPlaneModule.init();
-    m_lua.init();
+    
 }
 
 FSUIPCEngine::~FSUIPCEngine()
@@ -48,6 +47,23 @@ FSUIPCEngine::~FSUIPCEngine()
         UnmapViewOfFile(elem.second.second);
         CloseHandle(elem.second.first);
     }
+}
+
+promise::Defer FSUIPCEngine::init()
+{
+    return promise::newPromise([this](promise::Defer& p)
+    {
+        m_lua.load().then([this, p]
+        {
+            m_xPlaneModule.init();
+            m_lua.init();
+            p.resolve();
+        }).fail([this, p](std::string e)
+        {
+            p.reject(e);
+        });
+    });
+
 }
 
 LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)

@@ -27,6 +27,9 @@ public:
 // Implementation
 
 	DECLARE_MESSAGE_MAP()
+
+    afx_msg void OnCustomMessage(WPARAM wParam, LPARAM lParam);
+
 };
 
 extern CAltFSApp theApp;

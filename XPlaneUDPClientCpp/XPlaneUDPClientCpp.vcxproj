@@ -153,6 +153,7 @@
     <ClInclude Include="UDPClient.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ActiveObject.cpp" />
     <ClCompile Include="BeaconListener.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

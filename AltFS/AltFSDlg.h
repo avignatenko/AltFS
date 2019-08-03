@@ -14,7 +14,9 @@ class CAltFSDlg : public CDialog
     // Construction
 public:
     CAltFSDlg(FSUIPCEngine& engine, CWnd* pParent = nullptr);	// standard constructor
-
+    ~CAltFSDlg()
+    {
+    }
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
     enum { IDD = IDD_ALTFS_DIALOG };

@@ -5,6 +5,7 @@
 
 #include <filesystem>
 
+
 namespace sol { class state; }
 
 class OffsetStatsGenerator;
@@ -17,10 +18,11 @@ public:
 
     // lua module api
     virtual sol::state& getLua() override { return lua();}
-    virtual void runOnLuaThread(std::function<void()> func) override {m_dispatchQueue.put(func);}
+    virtual void runOnLuaThread(std::function<void()> func) override {runOnThread(func);}
 
     // own
-    void init();
+    promise::Defer load();
+    promise::Defer init();
 
     void readFromSim(uint32_t offset, uint32_t size, void* data);
     void writeToSim(uint32_t offset, uint32_t size, const void* data);
@@ -34,5 +36,6 @@ private:
     std::unique_ptr<sol::state> m_lua;
     std::filesystem::path m_scriptPath;
     std::unique_ptr<OffsetStatsGenerator> m_stats;
+    bool m_initialized = false;
 
 };

@@ -1,21 +1,46 @@
 #include "stdafx.h"
+
 #include "LuaEngine.h"
 #include "LuaModule.h"
 #include "OffsetStatsGenerator.h"
 
-#define SOL_ALL_SAFETIES_ON 1
 #include <sol/sol.hpp>
 
 #include <spdlog/spdlog.h>
 
 #include <future>
 
+
+
 LuaEngine::LuaEngine(const std::filesystem::path& scriptPath)
     : m_lua(std::make_unique<sol::state>())
     , m_scriptPath(scriptPath)
     , m_stats(std::make_unique<OffsetStatsGenerator>(scriptPath / "stats.csv"))
 {
-    m_dispatchQueue.put([this]
+
+}
+
+LuaEngine::~LuaEngine()
+{
+    // run final stuff
+    if (m_initialized)
+    {
+        std::promise<bool> retval;
+        bool result = runOnThread([this, &retval]
+        {
+            if (isDone()) { retval.set_value(false); return; }
+
+            bool result = lua()["shutdown"]();
+            retval.set_value(result);
+        });
+        result = !result || retval.get_future().get();
+    }
+
+}
+
+promise::Defer LuaEngine::load()
+{
+    return newPromiseAsync(this, [this](Runner* caller, promise::Defer d)
     {
         lua().open_libraries(sol::lib::base, sol::lib::package, sol::lib::string);
 
@@ -25,42 +50,35 @@ LuaEngine::LuaEngine(const std::filesystem::path& scriptPath)
             spdlog::debug(log);
         });
 
-        
-        try
+
+        auto result = lua().safe_script_file((m_scriptPath / "script.lua").string());
+
+        if (!result.valid())
         {
-            auto result1 = lua().safe_script_file((m_scriptPath / "script.lua").string());
+            sol::error err = result;
+            spdlog::critical("An error occurred: {}", err.what());
+
+            caller->runOnThread([d, err] 
+            { 
+                d.reject(std::string(err.what())); 
+            });
         }
-        catch (const sol::error& e)
+        else
         {
-            spdlog::error("an expected error has occurred: {}", e.what());
-            throw;
+            m_initialized = true;
+           caller->runOnThread([d] {   d.resolve(); });
         }
+      
 
     });
-
-}
-
-LuaEngine::~LuaEngine()
-{
-    // run final stuff
-
-     std::promise<bool> retval;
-
-     m_dispatchQueue.put([this, &retval]
-     {
-          bool result = lua()["shutdown"]();
-          retval.set_value(result);
-     });
    
-     bool result = retval.get_future().get();
-
 }
 
 void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
 {
     std::promise<void> retval;
 
-    m_dispatchQueue.put([this, offset, data, size, &retval]
+    runOnThread([this, offset, data, size, &retval]
     {
         sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
         if (offsetTable.has_value())
@@ -100,13 +118,13 @@ void LuaEngine::readFromSim(uint32_t offset, uint32_t size, void* data)
             }
 
             }
-            
+
         }
         else
         {
             m_stats->reportUnknownOffset(offset, size, false);
         }
-        
+
         retval.set_value();
     });
 
@@ -121,7 +139,7 @@ void LuaEngine::writeToSim(uint32_t offset, uint32_t size, const void * data)
     std::vector<uint8_t> dataVec((uint8_t*)data, (uint8_t*)data + size);
 
     // put to queue
-    m_dispatchQueue.put([this, dataVec, size, offset]
+    runOnThread([this, dataVec, size, offset]
     {
         sol::optional<sol::table> offsetTable = lua()["offsets"][offset];
         if (offsetTable.has_value())
@@ -148,15 +166,15 @@ void LuaEngine::writeToSim(uint32_t offset, uint32_t size, const void * data)
 
 }
 
-void LuaEngine::init()
+promise::Defer LuaEngine::init()
 {
-
-    m_dispatchQueue.put([this]
+    return newPromiseAsync(this, [this](Runner* caller, promise::Defer d)
     {
- 
+        if (isDone()) return;
+
         // initialize lua script
         bool result = lua()["initialize"]();
 
+        caller->runOnThread([d] {   d.resolve(); });
     });
-
 }

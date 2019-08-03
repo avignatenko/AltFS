@@ -5,6 +5,8 @@
 #include <atomic>
 #include <memory>
 
+#include "../promise-cpp/promise.hpp"
+
 class DispatchQueue
 {
 
@@ -28,15 +30,35 @@ public:
         return op;
     }
 
+    Operation takeNonBlocking()
+    {
+        std::lock_guard<std::mutex> guard(m_qlock);
+        if (m_opsQueue.empty()) return nullptr;
+
+        Operation op = m_opsQueue.front();
+        m_opsQueue.pop();
+        return op;
+    }
+
 private:
 
-    std::mutex m_qlock;
+    mutable std::mutex m_qlock;
     std::queue<Operation> m_opsQueue;
     std::condition_variable m_empty;
 
 };
 
-class ActiveObject
+
+class Runner
+{
+public:
+
+    virtual bool runOnThread(std::function<void()> func) = 0;
+
+    thread_local static Runner* threadInstance;
+};
+
+class ActiveObject: public Runner
 {
 public:
     ActiveObject()
@@ -49,32 +71,68 @@ public:
         stop();
         m_runnable->join();
     }
+
+    bool runOnThread(std::function<void()> func) override
+    {
+        if (m_done) return false;
+        m_dispatchQueue.put(func);
+        return true;
+    }
+
+    bool isDone() { return m_done; }
+
    
 private:
 
-     void stop()
+    void stop()
     {
-        m_dispatchQueue.put(nullptr);
+        runOnThread(nullptr);
     }
 
     void run()
     {
-        bool done = false;
-        while (!done)
+
+        threadInstance = this;
+
+        while (!m_done)
         {
             auto functor = m_dispatchQueue.take();
             if (functor)
                 functor();
             else
-                done = true;
+                m_done = true;
         }
+
+        // dispatch remaing functions
+        while (auto functor = m_dispatchQueue.takeNonBlocking())
+            functor();
+
+        threadInstance = nullptr;
     }
 
-protected:
+   
+private:
 
     DispatchQueue m_dispatchQueue;
 
-private:
-
     std::unique_ptr<std::thread> m_runnable;
+    std::function<void(std::exception_ptr)> m_doneCallback;
+    std::atomic<bool> m_done = false;
 };
+
+
+/* Create new promise object */
+template <typename FUNC>
+inline promise::Defer newPromiseAsync(Runner* runner, FUNC func)
+{
+    promise::Defer promise = promise::newPromise();
+    promise->run([=](promise::Defer& d)
+    {
+        runner->runOnThread([=, caller = Runner::threadInstance]
+        {
+            func(caller, d);
+        });
+    }, promise);
+
+    return promise;
+}

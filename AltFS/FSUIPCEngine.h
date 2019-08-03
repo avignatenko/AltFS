@@ -13,6 +13,8 @@ public:
     FSUIPCEngine(const std::filesystem::path& scriptPath);
     ~FSUIPCEngine();
 
+    promise::Defer init();
+
     LRESULT processMessage(WPARAM wParam, LPARAM lParam);
 
 private:

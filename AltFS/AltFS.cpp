@@ -9,17 +9,20 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 
+
 #include <iostream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
+#define WM_CUSTOM_MESSAGE WM_USER +1
 
 // CAltFSApp
 
 BEGIN_MESSAGE_MAP(CAltFSApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
+     ON_THREAD_MESSAGE(WM_CUSTOM_MESSAGE, OnCustomMessage)
 END_MESSAGE_MAP()
 
 
@@ -27,8 +30,6 @@ END_MESSAGE_MAP()
 
 CAltFSApp::CAltFSApp()
 {
-	// TODO: add construction code here,
-	// Place all significant initialization in InitInstance
 }
 
 
@@ -37,7 +38,27 @@ CAltFSApp::CAltFSApp()
 CAltFSApp theApp;
 
 
+class MFCRunner : public Runner
+{
+public:
 
+    MFCRunner()
+    {
+        Runner::threadInstance = this;
+    }
+
+    ~MFCRunner()
+    {
+        Runner::threadInstance = nullptr;
+    }
+
+    virtual bool runOnThread(std::function<void()> f)  override
+    {
+        std::function<void()>* func = new std::function<void()>(f);
+        AfxGetApp()->PostThreadMessage(WM_USER + 1, WPARAM(func), 0);
+        return true;
+    }
+};
 
 BOOL CAltFSApp::InitInstance()
 {
@@ -84,7 +105,7 @@ BOOL CAltFSApp::InitInstance()
   	AfxRegisterClass(&wc);
 
   
-
+    /*
     if (AllocConsole())
 	{
 		FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
@@ -95,26 +116,43 @@ BOOL CAltFSApp::InitInstance()
 
 		std::cout << "This is a test of the attached console" << std::endl;
 		//FreeConsole();
-	}
+	}*/
 
-	// Standard initialization
-	SetRegistryKey(_T("Alexey Ignatenko"));
+    // Standard initialization
+    SetRegistryKey(_T("Alexey Ignatenko"));
 
+    MFCRunner runner;
     FSUIPCEngine engine((exePath / "lua").string());
-	CAltFSDlg dlg(engine);
-	m_pMainWnd = &dlg;
-	INT_PTR nResponse = dlg.DoModal();
-	if (nResponse == -1)
-	{
-		TRACE(traceAppMsg, 0, "Warning: dialog creation failed, so application is terminating unexpectedly.\n");
-	}
+   
+    CAltFSDlg dlg(engine);
+    m_pMainWnd = &dlg;
+
+     engine.init().fail([&dlg](std::string e)
+    {
+        ::MessageBox(NULL, CString("Fatal error: ") + e.c_str(), "Error", MB_OK);
+        dlg.EndDialog(-1);
+    });
+
+    INT_PTR nResponse = dlg.DoModal();
+    if (nResponse == -1)
+    {
+        TRACE(traceAppMsg, 0, "Warning: dialog creation failed, so application is terminating unexpectedly.\n");
+    }
 
 #if !defined(_AFXDLL) && !defined(_AFX_NO_MFC_CONTROLS_IN_DIALOGS)
-	ControlBarCleanUp();
+    ControlBarCleanUp();
 #endif
 
-	// Since the dialog has been closed, return FALSE so that we exit the
-	//  application, rather than start the application's message pump.
-	return FALSE;
+
+    // Since the dialog has been closed, return FALSE so that we exit the
+    //  application, rather than start the application's message pump.
+    return FALSE;
+}
+
+inline void CAltFSApp::OnCustomMessage(WPARAM wParam, LPARAM lParam)
+{
+    auto* func = reinterpret_cast<std::function<void()>*>(wParam);
+    (*func)();
+    delete func;
 }
 

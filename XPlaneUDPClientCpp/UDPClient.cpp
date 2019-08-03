@@ -62,7 +62,7 @@ public:
     {
         spdlog::debug("X-Plane UDP Client send dataref {}  {}", dataref, f);
 
-        m_dispatchQueue.put([this, dataref, f]()
+        runOnThread([this, dataref, f]()
         {
             SendFloatDataref data;
             strcpy(data.id, "DREF");
@@ -88,7 +88,7 @@ public:
     {
         spdlog::debug("X-Plane UDP Sender subscribe dataref {} with freq {} and num {}", dataref, freq, num);
 
-        m_dispatchQueue.put([this, dataref, freq, num]()
+        runOnThread([this, dataref, freq, num]()
         {
             SubscribeDataref data;
             strcpy(data.id, "RREF");
@@ -107,7 +107,7 @@ public:
     {
         spdlog::debug("X-Plane UDP Sender unsubscribe dataref {} ", dataref);
 
-        m_dispatchQueue.put([this, dataref, num]()
+        runOnThread([this, dataref, num]()
         {
             SubscribeDataref data;
             strcpy(data.id, "RREF");
@@ -191,7 +191,7 @@ private:
 
     void doReceive()
     {
-        m_dispatchQueue.put([this]
+        runOnThread([this]
         {
             try
             {
