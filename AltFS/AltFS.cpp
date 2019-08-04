@@ -6,9 +6,12 @@
 #include "AltFS.h"
 #include "AltFSDlg.h"
 #include "FSUIPCEngine.h"
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
 
+
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include <iostream>
 
@@ -62,6 +65,18 @@ public:
 
 BOOL CAltFSApp::InitInstance()
 {
+      if (AllocConsole())
+	{
+		FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
+
+		freopen_s(&fpstdin, "CONIN$", "r", stdin);
+		freopen_s(&fpstdout, "CONOUT$", "w", stdout);
+		freopen_s(&fpstderr, "CONOUT$", "w", stderr);
+
+		std::cout << "This is a test of the attached console" << std::endl;
+		//FreeConsole();
+	}
+
     // get filename of the executable
     CString path;
     GetModuleFileName(NULL, path.GetBuffer(MAX_PATH), MAX_PATH);
@@ -71,11 +86,13 @@ BOOL CAltFSApp::InitInstance()
     std::filesystem::path exePath = exeName.parent_path();
 
     // Set the default logger to file logger
-    spdlog::set_level(spdlog::level::debug); // Set global log level to debug
+    spdlog::set_level(spdlog::level::info); // Set global log level to debug
     
-    auto logFilename = exePath / "altfs.log";
-    auto file_logger = spdlog::basic_logger_mt("basic_logger", logFilename.string());
-    spdlog::set_default_logger(file_logger);
+    //auto logFilename = exePath / "altfs.log";
+    //auto file_logger = spdlog::basic_logger_mt("basic_logger", logFilename.string());
+    //spdlog::set_default_logger(file_logger);
+    auto console = spdlog::stdout_color_mt("console");   
+    spdlog::set_default_logger(console);
 
     spdlog::info("AltFs started");
 
@@ -105,18 +122,6 @@ BOOL CAltFSApp::InitInstance()
   	AfxRegisterClass(&wc);
 
   
-    /*
-    if (AllocConsole())
-	{
-		FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
-
-		freopen_s(&fpstdin, "CONIN$", "r", stdin);
-		freopen_s(&fpstdout, "CONOUT$", "w", stdout);
-		freopen_s(&fpstderr, "CONOUT$", "w", stderr);
-
-		std::cout << "This is a test of the attached console" << std::endl;
-		//FreeConsole();
-	}*/
 
     // Standard initialization
     SetRegistryKey(_T("Alexey Ignatenko"));

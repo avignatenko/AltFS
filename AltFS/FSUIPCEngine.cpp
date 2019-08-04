@@ -55,18 +55,11 @@ FSUIPCEngine::~FSUIPCEngine()
 
 promise::Defer FSUIPCEngine::init()
 {
-   
-    /*
-    m_xPlaneModule.discover()
-    .then([this](xplaneudpcpp::BeaconListener::ServerInfo& info)
-    {
-        return m_xPlaneModule.connect(info.host, info.port);
-    })*/
-    return 
-        m_xPlaneModule.connect("192.168.114", 49000)
-        .then([&]{m_logModule.init();})
-        .then([&]{m_xPlaneModule.init();})
-        .then([&]{m_lua.load();});
+    return m_xPlaneModule.discover()
+        .then([this](xplaneudpcpp::BeaconListener::ServerInfo& info){return m_xPlaneModule.connect(info.host, info.port);})
+        .then([&]{return m_logModule.init();})
+        .then([&]{return m_xPlaneModule.init();})
+        .then([&]{return m_lua.load();});
 }
 
 LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
@@ -145,10 +138,37 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
         return;
     }
 
+    // "FSUIPC" version (return 8.0) (split)
+    if (offset == 0x3304 && size == 2)
+    {
+        *reinterpret_cast<DWORD*>(data) = 0x0000;
+        return;
+    }
+
+    // "FSUIPC" version (return 8.0) (split)
+    if (offset == 0x3306 && size == 2)
+    {
+        *reinterpret_cast<DWORD*>(data) = 0x8000;
+        return;
+    }
+
     // "Sim" version (return P3D)
     if (offset == 0x3308 && size == 4)
     {
         *reinterpret_cast<DWORD*>(data) = 0xFADE000A;
+        return;
+    }
+
+     // "Sim" version (return P3D) (split)
+     if (offset == 0x3308 && size == 2)
+    {
+        *reinterpret_cast<DWORD*>(data) = 0x000A;
+        return;
+    }
+
+      if (offset == 0x330A && size == 2)
+    {
+        *reinterpret_cast<DWORD*>(data) = 0xFADE;
         return;
     }
 

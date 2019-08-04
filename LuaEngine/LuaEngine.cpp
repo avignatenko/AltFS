@@ -116,6 +116,15 @@ promise::Defer LuaEngine::readFromSim(uint32_t offset, uint32_t size, std::byte*
                     break;
                 }
 
+                case 10:
+                {
+                    double value = result.get<double>();
+                    *reinterpret_cast<double*>(data) = value;
+                    break;
+                }
+                default:
+                    // fixme, where is better place?
+                    spdlog::error("Invalid datatype on read {}/{}: {}", offset, size, type);
                 }
 
                 retval.set_value({true, ""});

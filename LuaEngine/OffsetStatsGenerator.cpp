@@ -14,7 +14,7 @@ void OffsetStatsGenerator::saveFile()
   for(auto& elem: m_offsets)
   {
      stream << 
-         elem.first.offset << ";" << 
+         std::hex << elem.first.offset << std::dec << ";" << 
          elem.first.size << ";" << 
          elem.second.writes << ";" << 
          elem.second.reads << ";" << 
