@@ -5,6 +5,7 @@
 
 #include "../LuaEngine/LuaEngine.h"
 #include "../LuaEngine/LuaXPlane.h"
+#include "../LuaEngine/LuaLogging.h"
 #include "../LuaEngine/OffsetStatsGenerator.h"
 
 #include "../XPlaneUDPClientCpp/ActiveObject.h"
@@ -122,7 +123,7 @@ int main(int argc, char** argv)
     std::filesystem::path exePath(argv[0]);
 
     // Set the default logger to file logger
-    spdlog::set_level(spdlog::level::debug); // Set global log level to debug
+    spdlog::set_level(spdlog::level::info); // Set global log level to debug
     
     auto logFilename = exePath.parent_path() / "altfs.log";
    // auto file_logger = spdlog::basic_logger_mt("basic_logger", logFilename.string());
@@ -133,6 +134,7 @@ int main(int argc, char** argv)
 
     LuaEngine m_lua(exePath.parent_path() / "lua");
     LuaXPlane m_xPlaneModule(m_lua);
+    LuaLogging luaLogging(m_lua);
     
     int16_t currentposition = -16383;
 
@@ -154,8 +156,10 @@ int main(int argc, char** argv)
 	
         // write
          m_lua.writeToSim(0x0BB2, 2, (std::byte*)&currentposition);
+
          m_lua.writeToSim(0x0BB6, 2, (std::byte*)&currentposition);
-        // m_lua.writeToSim(0x0BB1, 2, (std::byte*)&currentposition);
+
+        //m_lua.writeToSim(0x0CC1, 2, (std::byte*)&currentposition);
 
          if (currentposition >= 16383) 
              s_exit = true;
@@ -167,16 +171,17 @@ int main(int argc, char** argv)
          int16_t pos0, pos1;
          m_lua.readFromSim(0x0BB2, 2, (std::byte*)&pos0);
          m_lua.readFromSim(0x0BB6, 2, (std::byte*)&pos1);
-         std::cout << "pos: " << pos0 << " " << pos1 << std::endl;
+         //std::cout << "pos: " << pos0 << " " << pos1 << std::endl;
 
     });
 
-     m_xPlaneModule.discover()
-        .then([&](xplaneudpcpp::BeaconListener::ServerInfo& info)
-        {
-            return m_xPlaneModule.connect(info.host, info.port);
-        })
-     //m_xPlaneModule.connect("192.168.114", 49000)
+     //m_xPlaneModule.discover()
+     //   .then([&](xplaneudpcpp::BeaconListener::ServerInfo& info)
+     //   {
+     //       return m_xPlaneModule.connect(info.host, info.port);
+     //   })
+     m_xPlaneModule.connect("192.168.114", 49000)
+        .then([&]{luaLogging.init();})
         .then([&]{m_xPlaneModule.init();})
         .then([&]{m_lua.load();})
         .then([&]{d.run([&]{ t.start();}); });

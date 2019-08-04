@@ -36,13 +36,6 @@ promise::Defer LuaEngine::load()
     {
         lua().open_libraries(sol::lib::base, sol::lib::package, sol::lib::string);
 
-        // service functions
-        lua().set_function("log", [](int level, const std::string log)
-        {
-            spdlog::debug(log);
-        });
-
-
         auto result = lua().safe_script_file((m_scriptPath / "script.lua").string());
 
         if (!result.valid())
@@ -50,10 +43,7 @@ promise::Defer LuaEngine::load()
             sol::error err = result;
             spdlog::critical("An error occurred: {}", err.what());
 
-            caller->run([d, err]
-            {
-                d.reject(std::string(err.what()));
-            });
+            caller->run([d, err = std::string(err.what())]{ d.reject(err);});
         }
         else
         {
@@ -70,7 +60,13 @@ promise::Defer LuaEngine::readFromSim(uint32_t offset, uint32_t size, std::byte*
 {
     return promise::newPromise([this, offset, size, data](promise::Defer& d)
     {
-        std::promise<bool> retval;
+        struct Result
+        {
+            bool result;
+            std::string error;
+        };
+
+        std::promise<Result> retval;
 
         run([this, offset, size, data, &retval]
         {      
@@ -78,57 +74,66 @@ promise::Defer LuaEngine::readFromSim(uint32_t offset, uint32_t size, std::byte*
             if (offsetTable.has_value())
             {
                 int type = offsetTable.value()[1];
+                sol::protected_function readFunc = offsetTable.value()[2];
+                sol::protected_function_result result = readFunc();
+                if (!result.valid())
+                {
+                    sol::error err = result;
+                    retval.set_value({false, err.what()});
+                    return;
+                }
+
                 switch (type)
                 {
                 case 11:
                 {
-                    std::string value = offsetTable.value()[2]();
+                    std::string value = result.get<std::string>();
                     std::copy(value.begin(), value.end(), (uint8_t*)data);
                     break;
                 }
                 case 1:
                 {
-                    float value = offsetTable.value()[2]();
+                    uint8_t value = result.get<uint8_t>();
                     *reinterpret_cast<uint8_t*>(data) = value;
                     break;
                 }
                 case 2:
                 {
-                    float value = offsetTable.value()[2]();
+                    uint16_t value = result.get<uint16_t>();
                     *reinterpret_cast<uint16_t*>(data) = value;
                     break;
                 }
                 case 3:
                 {
-                    float value = offsetTable.value()[2]();
+                    uint32_t value = result.get<uint32_t>();
                     *reinterpret_cast<uint32_t*>(data) = value;
                     break;
                 }
                 case 6:
                 {
-                    float value = offsetTable.value()[2]();
+                    int16_t value = result.get<int16_t>();
                     *reinterpret_cast<int16_t*>(data) = value;
                     break;
                 }
 
                 }
 
-                retval.set_value(true);
+                retval.set_value({true, ""});
 
             }
             else
             {
                 m_stats->reportUnknownOffset(offset, size, false);
-                retval.set_value(false);
+                retval.set_value({false, "Unknown offset"});
             }
 
-    
+  
         });
 
         // wait
-        bool result = retval.get_future().get();
+        Result result = retval.get_future().get();
 
-        if (result) d.resolve(); else d.reject();
+        if (result.result) d.resolve(); else d.reject(result.error);
     });
 
 
@@ -145,25 +150,36 @@ promise::Defer LuaEngine::writeToSim(uint32_t offset, uint32_t size, const std::
         if (offsetTable.has_value())
         {
             int type = offsetTable.value()[1];
+            sol::protected_function writeFunc = offsetTable.value()[3];
+            sol::protected_function_result result;
             switch (type)
             {
             case 1: // uint8
-                offsetTable.value()[3](*reinterpret_cast<const uint8_t*>(dataVec.data()));
+                result = writeFunc(*reinterpret_cast<const uint8_t*>(dataVec.data()));
                 break;
             case 2: // uint16
-                offsetTable.value()[3](*reinterpret_cast<const uint16_t*>(dataVec.data()));
+                result = writeFunc(*reinterpret_cast<const uint16_t*>(dataVec.data()));
                 break;
             case 6: // sint16
-                offsetTable.value()[3](*reinterpret_cast<const int16_t*>(dataVec.data()));
+                result = writeFunc(*reinterpret_cast<const int16_t*>(dataVec.data()));
                 break;
             }
 
-            d.resolve();
+            if (result.valid())
+            {
+              caller->run([=]{d.resolve();});
+            }
+            else
+            {
+              sol::error err = result;
+              spdlog::critical("An error occurred: {}", err.what());
+              caller->run([=, err = std::string(err.what())]{d.reject(err);});
+            }
         }
         else
         {
             m_stats->reportUnknownOffset(offset, dataVec.size(), true);
-            d.reject();
+            caller->run([=]{d.reject();});
         }
     });
 

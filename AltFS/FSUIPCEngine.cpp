@@ -34,7 +34,9 @@ typedef struct tagXC_ACTION_WRITE_HDR
 
 
 FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
-    : m_lua(scriptPath), m_xPlaneModule(m_lua)
+    : m_lua(scriptPath)
+    , m_xPlaneModule(m_lua)
+    , m_logModule(m_lua)
    
 {
     
@@ -62,6 +64,7 @@ promise::Defer FSUIPCEngine::init()
     })*/
     return 
         m_xPlaneModule.connect("192.168.114", 49000)
+        .then([&]{m_logModule.init();})
         .then([&]{m_xPlaneModule.init();})
         .then([&]{m_lua.load();});
 }
@@ -154,10 +157,15 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
 }
 
 
-void FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
+promise::Defer FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
 {
-    spdlog::debug("Write request, offset 0x{0:04#x}, size {1}", offset, size);
+    return promise::newPromise([&](promise::Defer& d)
+    {
+        spdlog::debug("Write request, offset 0x{0:04#x}, size {1}", offset, size);
 
-    m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
+        m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
+    });
+
+
 }
 
