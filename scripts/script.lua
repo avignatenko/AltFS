@@ -27,6 +27,16 @@ local eng1_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[0]"
 local true_airspeed = xplane.dataref:new("sim/flightmodel/position/true_airspeed", xplane.types.float, freq.low) 
 local point_thrust = xplane.dataref:new("sim/flightmodel/engine/POINT_thrust[0]", xplane.types.float, freq.low) 
 local stall_warning = xplane.dataref:new("sim/cockpit2/annunciators/stall_warning", xplane.types.int, freq.low) 
+local alpha = xplane.dataref:new("sim/flightmodel/position/alpha", xplane.types.float, freq.medium) 
+local beta = xplane.dataref:new("sim/flightmodel/position/beta", xplane.types.float, freq.medium) 
+local crashed = xplane.dataref:new("sim/flightmodel2/misc/has_crashed", xplane.types.int, freq.low) 
+local aoa_degrees = xplane.dataref:new("sim/flightmodel2/misc/AoA_angle_degrees", xplane.types.int, freq.medium) -- Positive means aircracft nose is above the flight path in aircraft coordinates.
+local gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio", xplane.types.float, freq.medium) 
+local hydraulic_pressure_low = xplane.dataref:new("sim/cockpit2/annunciators/hydraulic_pressure", xplane.types.int, freq.verylow) 
+local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.medium) 
+
+
+
 
 local readonly = function(value) log(loglevel.error, "error: can't write into readonly var") end
 
@@ -35,28 +45,15 @@ offsets=
 
 -- IN PROGRESS {
 
---Stall warning (0=no, 1=stall)
-[0x036c] = { fsuipc_types.uint8, function() return stall_warning:read() end, readonly },
 --Engine 1 Jet N1 as 0 – 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
 [0x0898] = { fsuipc_types.uint16, function() return 0 end, readonly },
 -- Engine 2 Fuel Flow Pounds per Hour, as floating point double (FLOAT64)
 [0x09b0] = { fsuipc_types.float64, function() return 0 end, readonly },
---Fail mode, 0 ok, Hydraulics failure = 1
-[0x0b62] = { fsuipc_types.uint8, function() return 0 end, readonly },
---Gear position (right): 0=full up, 16383=full down
-[0x0bf0] = { fsuipc_types.uint32, function() return 0 end, readonly },
---G Force: units unknown, but /624 seems to give quite sensible values. See also offset 1140
-[0x11ba] = { fsuipc_types.sint16, function() return 0 end, readonly },
--- Angle of Attack Indicator angle, with 360 degrees = 65536. The value 32767 is 180 degrees Angle of Attack. The angle is expressed in the usual FS 16-bit angle units (360 degrees = 65536), with 180 degrees pointing to the 0.0 position (right and down about 35 degrees in a Boeing type AofA indicator). Note that the indicator angle actually decreases as the wing AofA increases.
-[0x11be] = { fsuipc_types.sint16, function() return 0 end, readonly },
+
 -- Turbine Engine 1 jet thrust, in pounds, as a double (FLOAT64). This is the jet thrust. See 2410 for propeller thrust (turboprops have both)
 [0x204c] = { fsuipc_types.float64, function() return 0 end, readonly },
 -- Aileron deflection, in radians, as a double (FLOAT64). Right turn positive, left turn negative. (This is the average of left and right)
 [0x2ea8] = { fsuipc_types.float64, function() return 0 end, readonly },
--- Incidence “alpha”, in radians, as a double (FLOAT64). This is the aircraft body angle of attack (AoA) not the wing AoA.
-[0x2ed0] = { fsuipc_types.float64, function() return 0 end, readonly },
--- Incidence “beta”, in radians, as a double (FLOAT64). This is the side slip angle.
-[0x2ed8] = { fsuipc_types.float64, function() return 0 end, readonly },
 -- CG percent, as a double (FLOAT64). This is the position of the actual CoG as a fraction (%/100) of MAC (Mean Aerodynamic Chord).
 [0x2ef8] = { fsuipc_types.float64, function() return 0 end, readonly },
 -- X (lateral, or left/right) acceleration in ft/sec/sec relative to the body axes in double floating point format.
@@ -70,6 +67,8 @@ offsets=
 -- }
 
 -- Custom BFF Offset 
+--Stall warning (0=no, 1=stall)
+[0x036c] = { fsuipc_types.uint8, function() return stall_warning:read() end, readonly },
 [0x0588]={ fsuipc_types.float64, function() return local_time_sec:read() end, readonly },
 --# Created offset - 0x6030 Aircraft ground speed, double, in m/s.
 [0x6030] = { fsuipc_types.float64, function() return ground_speed:read() end, readonly },
@@ -93,7 +92,18 @@ offsets=
 --# Custom offset - 0x0C04 Set Rudder Trim - data ref range +/1.0 scaled to +/- 16383
 [0x0c04] = { fsuipc_types.sint16, function() return rudder_trim:read() * 16383 end, function(value)  rudder_trim:write(value / 16383 ) end },
 
-
+--G Force: units unknown, but /624 seems to give quite sensible values. See also offset 1140
+[0x11ba] = { fsuipc_types.sint16, function() return g_nrml:read() * 9.8 * 624 end, readonly },
+-- Angle of Attack Indicator angle, with 360 degrees = 65536. The value 32767 is 180 degrees Angle of Attack. The angle is expressed in the usual FS 16-bit angle units (360 degrees = 65536), with 180 degrees pointing to the 0.0 position (right and down about 35 degrees in a Boeing type AofA indicator). Note that the indicator angle actually decreases as the wing AofA increases.
+[0x11be] = { fsuipc_types.uint16, function() return aoa_degrees:read() * 65536 end, readonly },
+--Fail mode, 0 ok, Hydraulics failure = 1
+[0x0b62] = { fsuipc_types.uint8, function() return hydraulic_pressure_low:read() end, readonly },
+--Gear position (right): 0=full up, 16383=full down
+[0x0bf0] = { fsuipc_types.uint32, function() return gear_deploy_ratio:read() * 16383 end, readonly },
+-- Incidence “alpha”, in radians, as a double (FLOAT64). This is the aircraft body angle of attack (AoA) not the wing AoA.
+[0x2ed0] = { fsuipc_types.float64, function() return alpha:read() end, readonly },
+-- Incidence “beta”, in radians, as a double (FLOAT64). This is the side slip angle.
+[0x2ed8] = { fsuipc_types.float64, function() return beta:read() end, readonly },
 --TAS: True Air Speed, as knots * 128	
 [0x02b8] = { fsuipc_types.uint32, function() return true_airspeed:read() *  1.943844 * 128 end, readonly },
 -- Minute of local time in FS (0–59)
@@ -118,7 +128,7 @@ offsets=
 -- Autopilot altitude lock
 [0x07d0]={ fsuipc_types.uint32, function() return altitude_hold_status:read() ~= 0 and 1 or 0 end, function(value) log(loglevel.error, "can't write into readonly var") end },
 -- Crashed flag
-[0x0840]={ fsuipc_types.sint16, function() return 0 end, function(value) log(loglevel.error, "can't write into readonly var") end },
+[0x0840]={ fsuipc_types.sint16, function() return crashed:read() end, function(value) log(loglevel.error, "can't write into readonly var") end },
 -- Elevator trim control input: –16383 to +16383
 [0x0bc0]={ fsuipc_types.sint16,  function() return elevator_trim:read() * 16383 end, function(value)  elevator_trim:write(value / 16383 ) end },
 -- Ready to Fly indicator. This is non-zero when FS is loading, or reloading a flight or aircraft or scenery, and 
