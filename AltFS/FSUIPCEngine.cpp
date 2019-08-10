@@ -129,49 +129,8 @@ LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
 
 void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
 {
-    spdlog::debug("Read request, offset {0:04#x}, size {1}", offset, size);
-
-    // "FSUIPC" version (return 8.0)
-    if (offset == 0x3304 && size == 4)
-    {
-        *reinterpret_cast<DWORD*>(data) = 0x80000000;
-        return;
-    }
-
-    // "FSUIPC" version (return 8.0) (split)
-    if (offset == 0x3304 && size == 2)
-    {
-        *reinterpret_cast<DWORD*>(data) = 0x0000;
-        return;
-    }
-
-    // "FSUIPC" version (return 8.0) (split)
-    if (offset == 0x3306 && size == 2)
-    {
-        *reinterpret_cast<DWORD*>(data) = 0x8000;
-        return;
-    }
-
-    // "Sim" version (return P3D)
-    if (offset == 0x3308 && size == 4)
-    {
-        *reinterpret_cast<DWORD*>(data) = 0xFADE000A;
-        return;
-    }
-
-     // "Sim" version (return P3D) (split)
-     if (offset == 0x3308 && size == 2)
-    {
-        *reinterpret_cast<DWORD*>(data) = 0x000A;
-        return;
-    }
-
-      if (offset == 0x330A && size == 2)
-    {
-        *reinterpret_cast<DWORD*>(data) = 0xFADE;
-        return;
-    }
-
+    spdlog::debug("Read request, offset {0:#x}, size {1}", offset, size);
+  
     m_lua.readFromSim(offset, size, static_cast<std::byte*>(data));
 
 }
@@ -181,7 +140,7 @@ promise::Defer FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* da
 {
     return promise::newPromise([&](promise::Defer& d)
     {
-        spdlog::debug("Write request, offset 0x{0:04#x}, size {1}", offset, size);
+        spdlog::debug("Write request, offset {0:#x}, size {1}", offset, size);
 
         m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
     });

@@ -41,7 +41,6 @@ public:
         , type_(type)
         , freq_(freq)
     {
-        LuaXPlane::s_instance->xplaneClient_->unsubscribeDataref(path_);
     }
 
     float read()
@@ -98,10 +97,11 @@ promise::Defer LuaXPlane::discover()
 
 promise::Defer LuaXPlane::connect(const std::string& address, int port)
 {
-    return promise::newPromise([this, address, port](promise::Defer& p)
+    return newPromiseAsync(api_.getLuaRunner(), [this, address, port](Runner* caller, promise::Defer p)
     {
         xplaneClient_ = std::make_unique<xplaneudpcpp::UDPClient>(address, port);
-        p.resolve();
+        xplaneClient_->connect()
+            .then([=]{ caller->run([=]{p.resolve();});});
     });
 }
 

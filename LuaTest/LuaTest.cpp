@@ -173,9 +173,9 @@ int main(int argc, char** argv)
          m_lua.readFromSim(0x0BB6, 2, (std::byte*)&pos1);
          //std::cout << "pos: " << pos0 << " " << pos1 << std::endl;
 
-         double time = 0.0;
-          m_lua.readFromSim(0x0588, 2, (std::byte*)&time);
-         std::cout << time << std::endl;
+         int16_t time = 0.0;
+          m_lua.readFromSim(0x11ba, 2, (std::byte*)&time);
+         std::cout << (double)time / 625 * -9.81 << std::endl;
     });
 
      //m_xPlaneModule.discover()
@@ -184,12 +184,11 @@ int main(int argc, char** argv)
      //       return m_xPlaneModule.connect(info.host, info.port);
      //   })
      m_xPlaneModule.connect("192.168.114", 49000)
-        .then([&]{return luaLogging.init();})
-        .then([&]{return m_xPlaneModule.init();})
-        .then([&]{return m_lua.load();})
+        .then([&]{ return luaLogging.init();})
+        .then([&]{ return m_xPlaneModule.init();})
+        .then([&]{ return m_lua.load();})
         .then([&]{d.run([&]{ t.start();}); });
 
-   
      d.run();
 
 }

@@ -24,8 +24,8 @@ local cgz_ref_to_default = xplane.dataref:new("sim/flightmodel/misc/cgz_ref_to_d
 local acf_stall_warn_alpha = xplane.dataref:new("sim/aircraft/overflow/acf_stall_warn_alpha", xplane.types.float, freq.once) 
 local dvinc_0 = xplane.dataref:new("sim/flightmodel/jetwash/DVinc[0]", xplane.types.float, freq.high) 
 local gearF1 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium) 
-local gearF2 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium) 
-local gearF3 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium) 
+local gearF2 = xplane.dataref:new("sim/flightmodel/forces/fnrml_gear", xplane.types.float, freq.medium) 
+local gearF3 = xplane.dataref:new("sim/flightmodel/forces/faxil_gear", xplane.types.float, freq.medium) 
 local fuel_flow_1 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[0]", xplane.types.float, freq.low) 
 local fuel_flow_2 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[1]", xplane.types.float, freq.low) 
 local eng1_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[0]", xplane.types.float, freq.low) 
@@ -44,6 +44,7 @@ local Qrad = xplane.dataref:new("sim/flightmodel/position/Qrad", xplane.types.fl
 local P_dot = xplane.dataref:new("sim/flightmodel/position/P_dot", xplane.types.float, freq.high) 
 local prop_rotation_speed_rad_sec = xplane.dataref:new("sim/flightmodel2/engines/prop_rotation_speed_rad_sec", xplane.types.float, freq.medium) 
 local local_ax = xplane.dataref:new("sim/flightmodel/position/local_ax", xplane.types.float, freq.high) 
+local rail1def = xplane.dataref:new("sim/flightmodel/controls/rail1def", xplane.types.float, freq.high) 
 
 
 
@@ -54,12 +55,15 @@ local readonly = function(value) log(loglevel.error, "error: can't write into re
 offsets=
 {
 
+-- version, etc.
+[0x3304] = { fsuipc_types.uint16, function() return 0x0008 end, readonly },
+[0x3306] = { fsuipc_types.uint16, function() return 0x5000 end, readonly },
+[0x3308] = { fsuipc_types.uint16, function() return 0x0008 end, readonly },
+
 -- IN PROGRESS {
 
 -- Turbine Engine 1 jet thrust, in pounds, as a double (FLOAT64). This is the jet thrust. See 2410 for propeller thrust (turboprops have both)
 [0x204c] = { fsuipc_types.float64, function() return 0 end, readonly },
--- Aileron deflection, in radians, as a double (FLOAT64). Right turn positive, left turn negative. (This is the average of left and right)
-[0x2ea8] = { fsuipc_types.float64, function() return 0 end, readonly },
 -- CG percent, as a double (FLOAT64). This is the position of the actual CoG as a fraction (%/100) of MAC (Mean Aerodynamic Chord).
 [0x2ef8] = { fsuipc_types.float64, function() return 0 end, readonly },
 
@@ -79,7 +83,7 @@ offsets=
 [0x6030] = { fsuipc_types.float64, function() return ground_speed:read() end, readonly },
 --# Custom offset - 0x66E0 CG Position Displacement from default in meters  (changed from previous 6700)
 [0x66e0] = { fsuipc_types.float64, function() return cgz_ref_to_default:read() end, readonly },
---# Custom offset - 0x66E8 - stall warning Angle of Attack - in Degrees
+--# Custom offset - 0x66E8 - stall warning Angle  of Attack - in Degrees
 [0x66e8] = { fsuipc_types.float64, function() return acf_stall_warn_alpha:read() end, readonly },
 --# Custom offset - 0x66F8 Engine 1 wash in m/s
 [0x66f8] = { fsuipc_types.float64, function() return dvinc_0:read() end, readonly },
@@ -102,7 +106,7 @@ offsets=
 --Engine 1 Jet N1 as 0 – 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
 [0x0898] = { fsuipc_types.uint16, function() return prop_rotation_speed_rad_sec:read() * 1/(2*3.14) end, readonly },
 --G Force: units unknown, but /624 seems to give quite sensible values. See also offset 1140
-[0x11ba] = { fsuipc_types.sint16, function() return g_nrml:read() * 9.8 * 624 end, readonly },
+[0x11ba] = { fsuipc_types.sint16, function() return g_nrml:read() * 625 end, readonly },
 -- Angle of Attack Indicator angle, with 360 degrees = 65536. The value 32767 is 180 degrees Angle of Attack. The angle is expressed in the usual FS 16-bit angle units (360 degrees = 65536), with 180 degrees pointing to the 0.0 position (right and down about 35 degrees in a Boeing type AofA indicator). Note that the indicator angle actually decreases as the wing AofA increases.
 [0x11be] = { fsuipc_types.uint16, function() return aoa_degrees:read() * 65536 end, readonly },
 --Fail mode, 0 ok, Hydraulics failure = 1
@@ -130,6 +134,8 @@ offsets=
 -- Heading
 [0x0bba] = { fsuipc_types.sint16, function() return yoke_heading_ratio:read() * 16383 end, function(value) yoke_heading_ratio:write(value / 16383) end },
 	
+-- Aileron deflection, in radians, as a double (FLOAT64). Right turn positive, left turn negative. (This is the average of left and right)
+[0x2ea8] = { fsuipc_types.float64, function() return rail1def * 0.0174533 end, readonly },
 -- Slew mode (indicator and control), 0=off, 1=on. (See 05DE also).
 [0x05dc]={ fsuipc_types.uint16, function() return 0 end, function(value) end },
 -- Autopilot Master switch
