@@ -1,4 +1,8 @@
 
+--Ail_Def_FS:0.000000000000
+
+
+
 fsuipc_types = {uint8=1, uint16=2, uint32=3, uint64=4, sint8=5, sint16=6, sint32=7, sint64=8, float32=9, float64=10, array=11}
 
 local freq = {once = 1, veryhigh = 60, high = 30, medium = 15, low = 5, verylow = 1}
@@ -23,7 +27,9 @@ local gearF1 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.ty
 local gearF2 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium) 
 local gearF3 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium) 
 local fuel_flow_1 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[0]", xplane.types.float, freq.low) 
+local fuel_flow_2 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[1]", xplane.types.float, freq.low) 
 local eng1_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[0]", xplane.types.float, freq.low) 
+local eng2_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[1]", xplane.types.float, freq.low) 
 local true_airspeed = xplane.dataref:new("sim/flightmodel/position/true_airspeed", xplane.types.float, freq.low) 
 local point_thrust = xplane.dataref:new("sim/flightmodel/engine/POINT_thrust[0]", xplane.types.float, freq.low) 
 local stall_warning = xplane.dataref:new("sim/cockpit2/annunciators/stall_warning", xplane.types.int, freq.low) 
@@ -34,21 +40,21 @@ local aoa_degrees = xplane.dataref:new("sim/flightmodel2/misc/AoA_angle_degrees"
 local gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio", xplane.types.float, freq.medium) 
 local hydraulic_pressure_low = xplane.dataref:new("sim/cockpit2/annunciators/hydraulic_pressure", xplane.types.int, freq.verylow) 
 local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.medium) 
+local Qrad = xplane.dataref:new("sim/flightmodel/position/Qrad", xplane.types.float, freq.medium) 
+local P_dot = xplane.dataref:new("sim/flightmodel/position/P_dot", xplane.types.float, freq.high) 
+local prop_rotation_speed_rad_sec = xplane.dataref:new("sim/flightmodel2/engines/prop_rotation_speed_rad_sec", xplane.types.float, freq.medium) 
+local local_ax = xplane.dataref:new("sim/flightmodel/position/local_ax", xplane.types.float, freq.high) 
 
 
 
 
 local readonly = function(value) log(loglevel.error, "error: can't write into readonly var") end
 
+
 offsets=
 {
 
 -- IN PROGRESS {
-
---Engine 1 Jet N1 as 0 – 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
-[0x0898] = { fsuipc_types.uint16, function() return 0 end, readonly },
--- Engine 2 Fuel Flow Pounds per Hour, as floating point double (FLOAT64)
-[0x09b0] = { fsuipc_types.float64, function() return 0 end, readonly },
 
 -- Turbine Engine 1 jet thrust, in pounds, as a double (FLOAT64). This is the jet thrust. See 2410 for propeller thrust (turboprops have both)
 [0x204c] = { fsuipc_types.float64, function() return 0 end, readonly },
@@ -56,17 +62,16 @@ offsets=
 [0x2ea8] = { fsuipc_types.float64, function() return 0 end, readonly },
 -- CG percent, as a double (FLOAT64). This is the position of the actual CoG as a fraction (%/100) of MAC (Mean Aerodynamic Chord).
 [0x2ef8] = { fsuipc_types.float64, function() return 0 end, readonly },
--- X (lateral, or left/right) acceleration in ft/sec/sec relative to the body axes in double floating point format.
-[0x3060] = { fsuipc_types.float64, function() return 0 end, readonly },
--- Roll acceleration in radians/sec/sec relative to the body in double floating point format.
-[0x3080] = { fsuipc_types.float64, function() return 0 end, readonly },
--- Pitch velocity in rads/sec relative to the body axes in double floating point format.
-[0x30a8] = { fsuipc_types.float64, function() return 0 end, readonly },
 
+-- elevator deflection
+--Offset_0x2E98=0x2E98 
+-- rudder deflection
+--Offset_0x2EB8=0x2EB8
 
 -- }
 
 -- Custom BFF Offset 
+
 --Stall warning (0=no, 1=stall)
 [0x036c] = { fsuipc_types.uint8, function() return stall_warning:read() end, readonly },
 [0x0588]={ fsuipc_types.float64, function() return local_time_sec:read() end, readonly },
@@ -85,6 +90,8 @@ offsets=
 --# Substitute offset - to zero the fuel flow when engine 1 is not running
 --# Does this by multiplying the fuel flow parameter by the engine running parameter (0 or 1)
 [0x0918] = { fsuipc_types.float64, function() return eng1_running:read() * fuel_flow_1:read() * 7936.64 end, readonly },
+-- Engine 2 Fuel Flow Pounds per Hour, as floating point double (FLOAT64)
+[0x09b0] = { fsuipc_types.float64, function() return eng2_running:read() * fuel_flow_2:read() * 7936.64 end, readonly },
 -- Aileron trim value/control: –16383 to +16383
 --# Custom offset - 0x0C02 Set Aileron Trim - data ref range +/1.0 scaled to +/- 16383
 [0x0c02] = { fsuipc_types.sint16, function() return aileron_trim:read() * 16383 end, function(value)  aileron_trim:write(value / 16383 ) end },
@@ -92,6 +99,8 @@ offsets=
 --# Custom offset - 0x0C04 Set Rudder Trim - data ref range +/1.0 scaled to +/- 16383
 [0x0c04] = { fsuipc_types.sint16, function() return rudder_trim:read() * 16383 end, function(value)  rudder_trim:write(value / 16383 ) end },
 
+--Engine 1 Jet N1 as 0 – 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
+[0x0898] = { fsuipc_types.uint16, function() return prop_rotation_speed_rad_sec:read() * 1/(2*3.14) end, readonly },
 --G Force: units unknown, but /624 seems to give quite sensible values. See also offset 1140
 [0x11ba] = { fsuipc_types.sint16, function() return g_nrml:read() * 9.8 * 624 end, readonly },
 -- Angle of Attack Indicator angle, with 360 degrees = 65536. The value 32767 is 180 degrees Angle of Attack. The angle is expressed in the usual FS 16-bit angle units (360 degrees = 65536), with 180 degrees pointing to the 0.0 position (right and down about 35 degrees in a Boeing type AofA indicator). Note that the indicator angle actually decreases as the wing AofA increases.
@@ -139,5 +148,11 @@ offsets=
 -- Propeller 1 thrust in pounds, as a double (FLOAT64). This is for props and turboprops.
 --# FSUIPC offset - 0x2410 Engine 1 thrust in Pounds (comes in as Newtons)
 [0x2410] = { fsuipc_types.float64, function() return point_thrust:read() * 0.2243 end, readonly },
+-- Pitch velocity in rads/sec relative to the body axes in double floating point format.
+[0x30a8] = { fsuipc_types.float64, function() return Qrad:read() end, readonly },
+-- Roll acceleration in radians/sec/sec relative to the body in double floating point format.
+[0x3080] = { fsuipc_types.float64, function() return P_dot:read() * 0.01745 end, readonly },
+-- X (lateral, or left/right) acceleration in ft/sec/sec relative to the body axes in double floating point format.
+[0x3060] = { fsuipc_types.float64, function() return local_ax:read() * 3.28084 end, readonly },
 
 }
