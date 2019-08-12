@@ -1,11 +1,10 @@
 #include "stdafx.h"
 #include "OffsetStatsGenerator.h"
 
+#include <spdlog/spdlog.h>
+
 #include <ostream>
 #include <fstream>
-
-
-
 
 void OffsetStatsGenerator::saveFile()
 {
@@ -36,6 +35,7 @@ OffsetStatsGenerator::~OffsetStatsGenerator()
 
 void OffsetStatsGenerator::reportUnknownOffset(int offset, int size, bool isWrite)
 {
+    spdlog::warn("Unknown offset: {0:#x}, {1}, {2}", offset, size, isWrite);
     auto& elem = m_offsets[{offset, size}];
     if (isWrite)
         ++elem.writes;

@@ -43,21 +43,24 @@ class Client
 {
 public:
 
-    Client(io_service& io, int portThis)
-        : socket_(io), io_(io)
+    Client(io_service& io, udp::socket& socket)
+        : socket_(socket), io_(io)
     {
+    }
 
-        udp::endpoint sendEndpoint(udp::v4(), portThis);
-
-        socket_.open(sendEndpoint.protocol());
-        socket_.set_option(boost::asio::ip::udp::socket::reuse_address(true));
-        socket_.bind(sendEndpoint);
-
+    void stop()
+    {
+        boost::asio::dispatch(io_, [this]
+        {
+            m_stopped = true;
+            socket_.close();
+        });
     }
 
 protected:
 
-    udp::socket socket_;
+    bool m_stopped = false;
+    udp::socket& socket_;
     io_service& io_;
 };
 
@@ -65,9 +68,9 @@ class ClientSender : public Client
 {
 public:
 
-    ClientSender(io_service& io, int portThis, const std::string& addressRemote, int portRemote)
+    ClientSender(io_service& io, udp::socket& socket, const std::string& addressRemote, int portRemote)
         : endpointRemote_(udp::endpoint(address::from_string(addressRemote), portRemote))
-        , Client(io, portThis)
+        , Client(io, socket)
     {
         spdlog::info("X-Plane UDP Sender client init");
     }
@@ -83,7 +86,7 @@ public:
 
     promise::Defer writeDataref(const std::string& dataref, float f)
     {
-        return promise::newPromise([&](promise::Defer d)
+        return promise::newPromise([&](promise::Defer& d)
         {
             io_.dispatch([=]
             {
@@ -147,9 +150,9 @@ public:
 
     }
 
-    promise::Defer unsubscribeDataref(int num)
+    promise::Defer unsubscribeDataref(int num, const std::string& dataref)
     {
-        return promise::newPromise([&](promise::Defer d)
+        return promise::newPromise([=](promise::Defer d)
         {
             io_.dispatch([=]
             {
@@ -160,7 +163,9 @@ public:
                 data.freq = 0;
                 data.num = num;
 
-                std::memset(data.refName, 0, 400);
+                strcpy(data.refName, dataref.c_str());
+                std::memset(data.refName + dataref.length() + 1, 0, 400 - dataref.length() - 1);
+
 
                 socket_.async_send_to(buffer(&data, sizeof(data)), endpointRemote_,
                                       [d](const boost::system::error_code& error,
@@ -180,34 +185,13 @@ private:
 class ClientReceiver : public Client
 {
 public:
-    ClientReceiver(io_service& io, int portThis, ClientSender& sender)
-        : Client(io, portThis)
+    ClientReceiver(io_service& io, udp::socket& socket, ClientSender& sender)
+        : Client(io, socket)
         , sender_(sender)
     {
         spdlog::info("X-Plane UDP Receiver client init");
 
         doReceive();
-    }
-
-    enum class Mode
-    {
-        unsubscribe,
-        dispatch
-    };
-
-    promise::Defer setMode(Mode mode)
-    {
-        return promise::newPromise([=](promise::Defer d)
-        {
-            io_.dispatch([=]
-            {
-                mode_ = mode;
-                spdlog::info("X-Plane UDP Receiver mode set to {}", static_cast<int>(mode_));
-
-                d.resolve();
-            });;
-        });
-
     }
 
     promise::Defer getDatarefNum(const std::string& dataref)
@@ -238,7 +222,7 @@ public:
         spdlog::debug("X-Plane UDP Receiver client subscribe dataref {}", dataref);
 
         getDatarefNum(dataref)
-            .then([=](int num)
+            .then([=](size_t num)
         {
             sender_.subscribeDataref(dataref, freq, num);
             datarefs_[num].second = callback;
@@ -255,26 +239,33 @@ public:
             .then([=](int num)
         {
             // send unsubscribe
-            sender_.unsubscribeDataref(num);
+            sender_.unsubscribeDataref(num, dataref);
             datarefs_[num].second = nullptr;
         });
 
     }
 
-    void unsubscribeAll()
+    promise::Defer unsubscribeAll()
     {
-        spdlog::debug("X-Plane UDP Receiver client unsubscribe all");
 
-        io_.dispatch([this]
+        return promise::newPromise([this](promise::Defer d)
         {
-            for (size_t i = 0; i < datarefs_.size(); ++i)
-            {
-                // send unsubscribe
-                sender_.unsubscribeDataref(i);
-            }
+            spdlog::debug("X-Plane UDP Receiver client unsubscribe all");
 
-            datarefs_.clear();
+            io_.dispatch([this, d]
+            {
+                for (size_t i = 0; i < datarefs_.size(); ++i)
+                {
+                    // send unsubscribe
+                    sender_.unsubscribeDataref(i, datarefs_[i].first);
+                }
+
+                datarefs_.clear();
+                d.resolve();
+            });
         });
+
+
     }
 
 private:
@@ -324,51 +315,44 @@ private:
             {
                 const ReceiveDataref::Value& valueData = message->value[i];
 
-                if (mode_ == Mode::dispatch)
-                {
-                    if (valueData.num < 0 || valueData.num >= (int)datarefs_.size()) continue; // fixme: what's that?                   
-                    auto& dataref = datarefs_[valueData.num];
+                if (valueData.num < 0 || valueData.num >= (int)datarefs_.size()) continue; // fixme: what's that?                   
+                auto& dataref = datarefs_[valueData.num];
 
-                    if (dataref.second) // subscribed?
-                        dataref.second(valueData.value);
-                }
-                else if (mode_ == Mode::unsubscribe)
-                {
-                    // send unsubscribe
-                    sender_.unsubscribeDataref(valueData.num);
-                    //datarefs_[num].second = nullptr;
-                }
-
+                if (dataref.second) // subscribed?
+                    dataref.second(valueData.value);
             }
 
-            doReceive();
+            if (!m_stopped) doReceive();
         });
     }
 
 private:
 
     std::deque<std::pair<std::string, std::function<void(float)>>> datarefs_;
-    Mode mode_ = Mode::unsubscribe;
     ClientSender& sender_;
     ReceiveDataref message[1];
     udp::endpoint senderEndpoint;
 
 };
 
-xplaneudpcpp::UDPClient::UDPClient(const std::string& address, int port)
+xplaneudpcpp::UDPClient::UDPClient(const std::string& address, int port): socket_(io_)
 {
     spdlog::info("X-Plane UDP Client created with address {}:{}", address, port);
     const int localPort = 50000;
     spdlog::info("X-Plane UDP Client local port is {}", localPort);
 
-    m_clientSender = std::make_unique<ClientSender>(io_, localPort, address, port);
-    m_clientReceiver = std::make_unique<ClientReceiver>(io_, localPort, *m_clientSender);
+    udp::endpoint sendEndpoint(udp::v4(), localPort);
+
+    socket_.open(sendEndpoint.protocol());
+    socket_.bind(sendEndpoint);
+
+    m_clientSender = std::make_unique<ClientSender>(io_, socket_, address, port);
+    m_clientReceiver = std::make_unique<ClientReceiver>(io_, socket_, *m_clientSender);
 
     m_thread = std::make_unique<std::thread>([this]
     {
         io_.run();
-        spdlog::info("Stopped");
-
+        spdlog::info("UDPClient thread stopped");
     });
 }
 
@@ -376,9 +360,15 @@ xplaneudpcpp::UDPClient::~UDPClient()
 {
     spdlog::info("X-Plane UDP Client shutdown attempt...");
 
-    io_.stop();
-    m_thread->join();
+    m_clientReceiver->unsubscribeAll()
+        .then([this]
+        {
+            m_clientReceiver->stop();
+            m_clientSender->stop();
+        });
 
+
+    m_thread->join();
 
     m_clientReceiver.reset();
     m_clientSender.reset();
@@ -389,10 +379,7 @@ xplaneudpcpp::UDPClient::~UDPClient()
 
 promise::Defer UDPClient::connect()
 {
-    // wait for 2 seconds, and unsubscribe anything
-    return m_clientReceiver->setMode(ClientReceiver::Mode::unsubscribe)
-        .then([this] {return promise::delay(io_, 2000); })
-        .then([this] { return m_clientReceiver->setMode(ClientReceiver::Mode::dispatch);});
+    return promise::newPromise([](promise::Defer d){d.resolve();});
 }
 
 void xplaneudpcpp::UDPClient::writeDataref(const std::string & dataref, float f)

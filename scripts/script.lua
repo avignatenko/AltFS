@@ -42,7 +42,7 @@ local hydraulic_pressure_low = xplane.dataref:new("sim/cockpit2/annunciators/hyd
 local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.medium) 
 local Qrad = xplane.dataref:new("sim/flightmodel/position/Qrad", xplane.types.float, freq.medium) 
 local P_dot = xplane.dataref:new("sim/flightmodel/position/P_dot", xplane.types.float, freq.high) 
-local prop_rotation_speed_rad_sec = xplane.dataref:new("sim/flightmodel2/engines/prop_rotation_speed_rad_sec", xplane.types.float, freq.medium) 
+local engine_rpm_0 = xplane.dataref:new("sim/cockpit2/engine/indicators/engine_speed_rpm[0]", xplane.types.float, freq.medium) 
 local local_ax = xplane.dataref:new("sim/flightmodel/position/local_ax", xplane.types.float, freq.high) 
 local rail1def = xplane.dataref:new("sim/flightmodel/controls/rail1def", xplane.types.float, freq.high) 
 
@@ -77,6 +77,9 @@ offsets=
 -- Custom BFF Offset 
 
 --Stall warning (0=no, 1=stall)
+[0x0] = { fsuipc_types.uint8, function() return 0 end, readonly },
+[0x5300] = { fsuipc_types.uint8, function() return 0 end, readonly },
+
 [0x036c] = { fsuipc_types.uint8, function() return stall_warning:read() end, readonly },
 [0x0588]={ fsuipc_types.float64, function() return local_time_sec:read() end, readonly },
 --# Created offset - 0x6030 Aircraft ground speed, double, in m/s.
@@ -104,13 +107,13 @@ offsets=
 [0x0c04] = { fsuipc_types.sint16, function() return rudder_trim:read() * 16383 end, function(value)  rudder_trim:write(value / 16383 ) end },
 
 --Engine 1 Jet N1 as 0 – 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
-[0x0898] = { fsuipc_types.uint16, function() return prop_rotation_speed_rad_sec:read() * 1/(2*3.14) end, readonly },
+[0x0898] = { fsuipc_types.uint16, function() return engine_rpm_0:read() *  16384 / 3000 end, readonly },
 --G Force: units unknown, but /624 seems to give quite sensible values. See also offset 1140
 [0x11ba] = { fsuipc_types.sint16, function() return g_nrml:read() * 625 end, readonly },
 -- Angle of Attack Indicator angle, with 360 degrees = 65536. The value 32767 is 180 degrees Angle of Attack. The angle is expressed in the usual FS 16-bit angle units (360 degrees = 65536), with 180 degrees pointing to the 0.0 position (right and down about 35 degrees in a Boeing type AofA indicator). Note that the indicator angle actually decreases as the wing AofA increases.
 [0x11be] = { fsuipc_types.uint16, function() return aoa_degrees:read() * 65536 end, readonly },
 --Fail mode, 0 ok, Hydraulics failure = 1
-[0x0b62] = { fsuipc_types.uint8, function() return hydraulic_pressure_low:read() end, readonly },
+[0x0b62] = { fsuipc_types.uint8, function() return 0 end, readonly }, --  fixme: generalize
 --Gear position (right): 0=full up, 16383=full down
 [0x0bf0] = { fsuipc_types.uint32, function() return gear_deploy_ratio:read() * 16383 end, readonly },
 -- Incidence “alpha”, in radians, as a double (FLOAT64). This is the aircraft body angle of attack (AoA) not the wing AoA.

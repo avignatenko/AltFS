@@ -1,5 +1,7 @@
 #pragma once
 
+#include "promise.hpp"
+
 #include <functional>
 #include <boost/asio.hpp>
 #include <thread>
@@ -19,14 +21,14 @@ namespace xplaneudpcpp
              int port;
          };
 
-        using Callback = std::function<bool(const ServerInfo&)> ;
-
-        BeaconListener(Callback callback);
+        BeaconListener();
         ~BeaconListener();
+
+        /// Return ServerInfo as value
+        promise::Defer getXPlaneServerBroadcast();
 
     private:
 
-        Callback m_callback;
         boost::asio::io_service io_service;
  
         std::unique_ptr<std::thread> m_thread;

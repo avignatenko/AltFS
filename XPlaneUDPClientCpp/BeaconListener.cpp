@@ -6,19 +6,18 @@
 
 #include <spdlog/spdlog.h>
 
-namespace
-{
-
-class receiver
+class Receiver
 {
 public:
+    ~Receiver()
+    {
+    }
 
-    receiver(boost::asio::io_service& io_service,
+    Receiver(boost::asio::io_service& io_service,
              const boost::asio::ip::address& listen_address,
              const boost::asio::ip::address& multicast_address,
-             const unsigned short multicast_port,
-             xplaneudpcpp::BeaconListener::Callback& callback)
-        : socket_(io_service), m_callback(callback)
+             const unsigned short multicast_port)
+        : socket_(io_service)
     {
         // Create the socket so that multiple may be bound to the same address.
         boost::asio::ip::udp::endpoint listen_endpoint(
@@ -31,14 +30,22 @@ public:
         socket_.set_option(
             boost::asio::ip::multicast::join_group(multicast_address));
 
+         spdlog::info("BeaconListener created");
+    }
+
+    void startReceive( std::function<void(const xplaneudpcpp::BeaconListener::ServerInfo&)> callback)
+    {
+        m_callback = callback;
+
         socket_.async_receive_from(
             boost::asio::buffer(data_.data(), max_length), sender_endpoint_,
-            boost::bind(&receiver::handle_receive_from, this,
+            boost::bind(&Receiver::handle_receive_from, this,
                       boost::asio::placeholders::error,
                       boost::asio::placeholders::bytes_transferred));
 
-        spdlog::info("BeaconListener created, listening started");
+        spdlog::info("BeaconListener listening started");
     }
+
 private:
 
 #pragma pack (push, r1, 1)
@@ -79,20 +86,10 @@ private:
                 spdlog::info("Data parsed as X-Plane data: host {}, port: {}", serverInfo.host, serverInfo.port);
                 spdlog::info("Running callback...");
                 
-                found = m_callback(serverInfo);
+                m_callback(serverInfo);
 
                 spdlog::info("Callback returned {}", found);
             } 
-
-            if (!found)
-            {
-                spdlog::info("Continue listening", found);
-                socket_.async_receive_from(
-                    boost::asio::buffer(data_.data(), max_length), sender_endpoint_,
-                    boost::bind(&receiver::handle_receive_from, this,
-                              boost::asio::placeholders::error,
-                              boost::asio::placeholders::bytes_transferred));
-            }
         }
     }
 
@@ -102,33 +99,51 @@ private:
     boost::asio::ip::udp::endpoint sender_endpoint_{};
     enum { max_length = 1024 };
     std::array<char, max_length> data_{};
-    xplaneudpcpp::BeaconListener::Callback& m_callback;
+    std::function<void(const xplaneudpcpp::BeaconListener::ServerInfo&)> m_callback;
 };
-}
 
-xplaneudpcpp::BeaconListener::BeaconListener(Callback callback)
-    : m_callback(callback)
+
+xplaneudpcpp::BeaconListener::BeaconListener()
 {
-    m_thread = std::make_unique<std::thread>([this]()
-    {
-        const auto ownAddress = "0.0.0.0";
-        const auto multicastAddress = "239.255.1.1";
-        const unsigned short multicastPort = 49707;
-
-        receiver r(io_service,
-                   boost::asio::ip::address::from_string(ownAddress),
-                   boost::asio::ip::address::from_string(multicastAddress),
-                   multicastPort, m_callback);
-
-        io_service.run();
+    m_thread = std::make_unique<std::thread>([this]() 
+    { 
+        boost::asio::io_service::work w(io_service);
+        io_service.run(); 
     });
 
+}
+
+promise::Defer xplaneudpcpp::BeaconListener::getXPlaneServerBroadcast()
+{
+    return promise::newPromise([this](promise::Defer d)
+    {
+        io_service.dispatch([this, d]
+        {
+            const auto ownAddress = "0.0.0.0";
+            const auto multicastAddress = "239.255.1.1";
+            const unsigned short multicastPort = 49707;
+
+            auto receiver = std::make_shared<Receiver>(io_service,
+                                                       boost::asio::ip::address::from_string(ownAddress),
+                                                       boost::asio::ip::address::from_string(multicastAddress),
+                                                       multicastPort);
+
+            receiver->startReceive([d, receiver](const ServerInfo& info) mutable
+            {
+                d.resolve(info);
+
+                // have to call this, other receiver will keep a ref to itself
+                receiver.reset();
+            });
+
+        });
+
+    });
 }
 
 xplaneudpcpp::BeaconListener::~BeaconListener()
 {
     io_service.stop();
-
     m_thread->join();
 }
 

@@ -87,11 +87,12 @@ promise::Defer LuaXPlane::discover()
     return promise::newPromise([this](promise::Defer& p)
     {
         // start x-plane discovery
-        xplaneDiscoverer_.reset(new xplaneudpcpp::BeaconListener([this, p, caller = Runner::threadInstance](const xplaneudpcpp::BeaconListener::ServerInfo& info)
-        {
-            caller->run([p, info]{p.resolve(info);});
-            return true;
-        }));
+        xplaneDiscoverer_.reset(new xplaneudpcpp::BeaconListener);
+        xplaneDiscoverer_->getXPlaneServerBroadcast()
+            .then([this, p, caller = Runner::threadInstance](const xplaneudpcpp::BeaconListener::ServerInfo& info)
+            {
+                caller->run([p, info]{p.resolve(info);});
+            });            
     });
 }
 
