@@ -168,14 +168,14 @@ int main(int argc, char** argv)
 
          // read
 
-         int16_t pos0, pos1;
-         m_lua.readFromSim(0x0BB2, 2, (std::byte*)&pos0);
-         m_lua.readFromSim(0x0BB6, 2, (std::byte*)&pos1);
+         //int16_t pos0, pos1;
+         //m_lua.readFromSim(0x0BB2, 2, (std::byte*)&pos0);
+         //m_lua.readFromSim(0x0BB6, 2, (std::byte*)&pos1);
          //std::cout << "pos: " << pos0 << " " << pos1 << std::endl;
 
-         int16_t time = 0.0;
-          m_lua.readFromSim(0x11ba, 2, (std::byte*)&time);
-         std::cout << (double)time / 625 * -9.81 << std::endl;
+         double time = 0.0;
+          m_lua.readFromSim(0x2ea8, 8, (std::byte*)&time);
+         std::cout << (double)time << std::endl;
     });
 
      //m_xPlaneModule.discover()

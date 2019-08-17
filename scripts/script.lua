@@ -9,7 +9,7 @@ local freq = {once = 1, veryhigh = 60, high = 30, medium = 15, low = 5, verylow 
 
 local yoke_pitch_ratio = xplane.dataref:new("sim/joystick/yoke_pitch_ratio", xplane.types.float, freq.high)
 local yoke_roll_ratio = xplane.dataref:new("sim/joystick/yoke_roll_ratio", xplane.types.float, freq.high)
-local yoke_rudder_ratio = xplane.dataref:new("sim/joystick/yoke_heading_ratio", xplane.types.float, freq.high)
+local yoke_heading_ratio = xplane.dataref:new("sim/joystick/yoke_heading_ratio", xplane.types.float, freq.high)
 local sim_paused = xplane.dataref:new("sim/time/paused", xplane.types.int, freq.low)
 local ap_master = xplane.dataref:new("sim/cockpit/autopilot/autopilot_mode", xplane.types.int, freq.low) -- fixme, cockpit2?
 local altitude_hold_status = xplane.dataref:new("sim/cockpit2/autopilot/altitude_hold_status", xplane.types.int, freq.verylow)
@@ -22,7 +22,7 @@ local local_time_minutes = xplane.dataref:new("sim/cockpit2/clock_timer/local_ti
 local local_time_seconds = xplane.dataref:new("sim/cockpit2/clock_timer/local_time_seconds", xplane.types.int, freq.verylow) 
 local cgz_ref_to_default = xplane.dataref:new("sim/flightmodel/misc/cgz_ref_to_default", xplane.types.float, freq.verylow) 
 local acf_stall_warn_alpha = xplane.dataref:new("sim/aircraft/overflow/acf_stall_warn_alpha", xplane.types.float, freq.once) 
-local dvinc_0 = xplane.dataref:new("sim/flightmodel/jetwash/DVinc[0]", xplane.types.float, freq.high) 
+local dvinc_0 = xplane.dataref:new("sim/flightmodel/jetwash/DVinc[0]", xplane.types.float, freq.medium) 
 local gearF1 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium) 
 local gearF2 = xplane.dataref:new("sim/flightmodel/forces/fnrml_gear", xplane.types.float, freq.medium) 
 local gearF3 = xplane.dataref:new("sim/flightmodel/forces/faxil_gear", xplane.types.float, freq.medium) 
@@ -39,12 +39,12 @@ local crashed = xplane.dataref:new("sim/flightmodel2/misc/has_crashed", xplane.t
 local aoa_degrees = xplane.dataref:new("sim/flightmodel2/misc/AoA_angle_degrees", xplane.types.int, freq.medium) -- Positive means aircracft nose is above the flight path in aircraft coordinates.
 local gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio", xplane.types.float, freq.medium) 
 local hydraulic_pressure_low = xplane.dataref:new("sim/cockpit2/annunciators/hydraulic_pressure", xplane.types.int, freq.verylow) 
-local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.medium) 
+local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.high) 
+local g_side = xplane.dataref:new("sim/flightmodel/forces/g_side", xplane.types.float, freq.high) 
 local Qrad = xplane.dataref:new("sim/flightmodel/position/Qrad", xplane.types.float, freq.medium) 
 local P_dot = xplane.dataref:new("sim/flightmodel/position/P_dot", xplane.types.float, freq.high) 
 local engine_rpm_0 = xplane.dataref:new("sim/cockpit2/engine/indicators/engine_speed_rpm[0]", xplane.types.float, freq.medium) 
-local local_ax = xplane.dataref:new("sim/flightmodel/position/local_ax", xplane.types.float, freq.high) 
-local rail1def = xplane.dataref:new("sim/flightmodel/controls/rail1def", xplane.types.float, freq.high) 
+local lail1def = xplane.dataref:new("sim/flightmodel/controls/lail1def", xplane.types.float, freq.high) 
 
 
 
@@ -117,9 +117,9 @@ offsets=
 --Gear position (right): 0=full up, 16383=full down
 [0x0bf0] = { fsuipc_types.uint32, function() return gear_deploy_ratio:read() * 16383 end, readonly },
 -- Incidence “alpha”, in radians, as a double (FLOAT64). This is the aircraft body angle of attack (AoA) not the wing AoA.
-[0x2ed0] = { fsuipc_types.float64, function() return alpha:read() end, readonly },
+[0x2ed0] = { fsuipc_types.float64, function() return alpha:read() * 0.0174533 end, readonly },
 -- Incidence “beta”, in radians, as a double (FLOAT64). This is the side slip angle.
-[0x2ed8] = { fsuipc_types.float64, function() return beta:read() end, readonly },
+[0x2ed8] = { fsuipc_types.float64, function() return beta:read() * 0.0174533 end, readonly },
 --TAS: True Air Speed, as knots * 128	
 [0x02b8] = { fsuipc_types.uint32, function() return true_airspeed:read() *  1.943844 * 128 end, readonly },
 -- Minute of local time in FS (0–59)
@@ -129,7 +129,7 @@ offsets=
 -- GS: Ground Speed, as 65536*metres/sec. Not updated in Slew mode!
 [0x02b4] = { fsuipc_types.uint32, function() return ground_speed:read() * 65536 end, readonly },	
 -- Pause indicator (0=Not paused, 1=Paused)
-[0x0264]={ fsuipc_types.uint16, function() return sim_paused:read() > 0 and 1 or 0 end, function(value) log(loglevel.error, "can't write into readonly var") end },
+[0x0264]={ fsuipc_types.uint16, function() return sim_paused:read() > 0 and 1 or 0 end, readonly},
 -- Pitch
 [0x0bb2]={ fsuipc_types.sint16, function() return yoke_pitch_ratio:read() * 16383 end, function(value) yoke_pitch_ratio:write(value / 16383 ) end },
 -- Roll
@@ -138,22 +138,22 @@ offsets=
 [0x0bba] = { fsuipc_types.sint16, function() return yoke_heading_ratio:read() * 16383 end, function(value) yoke_heading_ratio:write(value / 16383) end },
 	
 -- Aileron deflection, in radians, as a double (FLOAT64). Right turn positive, left turn negative. (This is the average of left and right)
-[0x2ea8] = { fsuipc_types.float64, function() return rail1def * 0.0174533 end, readonly },
+[0x2ea8] = { fsuipc_types.float64, function() return -lail1def:read() * 0.0174533 end, readonly },
 -- Slew mode (indicator and control), 0=off, 1=on. (See 05DE also).
-[0x05dc]={ fsuipc_types.uint16, function() return 0 end, function(value) end },
+[0x05dc]={ fsuipc_types.uint16, function() return 0 end, function(value) end }, --fixme
 -- Autopilot Master switch
 [0x07bc]={ fsuipc_types.uint32, function() return ap_master:read() == 2 and 1 or 0 end, function(value) ap_master:write(value and 2 or 0) end },
 -- Autopilot altitude lock
-[0x07d0]={ fsuipc_types.uint32, function() return altitude_hold_status:read() ~= 0 and 1 or 0 end, function(value) log(loglevel.error, "can't write into readonly var") end },
+[0x07d0]={ fsuipc_types.uint32, function() return altitude_hold_status:read() ~= 0 and 1 or 0 end, readonly },
 -- Crashed flag
-[0x0840]={ fsuipc_types.sint16, function() return crashed:read() end, function(value) log(loglevel.error, "can't write into readonly var") end },
+[0x0840]={ fsuipc_types.sint16, function() return crashed:read() end,  readonly},
 -- Elevator trim control input: –16383 to +16383
 [0x0bc0]={ fsuipc_types.sint16,  function() return elevator_trim:read() * 16383 end, function(value)  elevator_trim:write(value / 16383 ) end },
 -- Ready to Fly indicator. This is non-zero when FS is loading, or reloading a flight or aircraft or scenery, and 
 -- becomes zero when flight mode is enabled (even if the simulator is paused or in Slew mode).
-[0x3364]={ fsuipc_types.uint8, function() return sim_paused:read() and 0 or 1 end, function(value) log(1, "error: can't write into readonly var")  end },
+[0x3364]={ fsuipc_types.uint8, function() return sim_paused:read() and 0 or 1 end, readonly},
 -- In Menu or Dialog flag. 
-[0x3365]={ fsuipc_types.uint8, function() return sim_paused:read() end, function(value) log(1, "error: can't write into readonly var")  end },
+[0x3365]={ fsuipc_types.uint8, function() return sim_paused:read() end, readonly},
 -- Propeller 1 thrust in pounds, as a double (FLOAT64). This is for props and turboprops.
 --# FSUIPC offset - 0x2410 Engine 1 thrust in Pounds (comes in as Newtons)
 [0x2410] = { fsuipc_types.float64, function() return point_thrust:read() * 0.2243 end, readonly },
@@ -162,6 +162,6 @@ offsets=
 -- Roll acceleration in radians/sec/sec relative to the body in double floating point format.
 [0x3080] = { fsuipc_types.float64, function() return P_dot:read() * 0.01745 end, readonly },
 -- X (lateral, or left/right) acceleration in ft/sec/sec relative to the body axes in double floating point format.
-[0x3060] = { fsuipc_types.float64, function() return local_ax:read() * 3.28084 end, readonly },
+[0x3060] = { fsuipc_types.float64, function() return g_side:read() * 3.28084 * 9.81 end, readonly },
 
 }

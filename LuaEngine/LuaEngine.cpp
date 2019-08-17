@@ -79,6 +79,7 @@ promise::Defer LuaEngine::readFromSim(uint32_t offset, uint32_t size, std::byte*
                 if (!result.valid())
                 {
                     sol::error err = result;
+                    spdlog::error("An error occurred: {}", err.what());
                     retval.set_value({false, err.what()});
                     return;
                 }
