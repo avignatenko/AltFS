@@ -1,7 +1,4 @@
 
---Ail_Def_FS:0.000000000000
-
-
 
 fsuipc_types = {uint8=1, uint16=2, uint32=3, uint64=4, sint8=5, sint16=6, sint32=7, sint64=8, float32=9, float64=10, array=11}
 
@@ -60,24 +57,19 @@ offsets=
 [0x3306] = { fsuipc_types.uint16, function() return 0x5000 end, readonly },
 [0x3308] = { fsuipc_types.uint16, function() return 0x0008 end, readonly },
 
--- IN PROGRESS {
-
 -- Turbine Engine 1 jet thrust, in pounds, as a double (FLOAT64). This is the jet thrust. See 2410 for propeller thrust (turboprops have both)
 [0x204c] = { fsuipc_types.float64, function() return 0 end, readonly },
 -- CG percent, as a double (FLOAT64). This is the position of the actual CoG as a fraction (%/100) of MAC (Mean Aerodynamic Chord).
 [0x2ef8] = { fsuipc_types.float64, function() return 0 end, readonly },
 
--- elevator deflection
---Offset_0x2E98=0x2E98 
--- rudder deflection
---Offset_0x2EB8=0x2EB8
-
--- }
-
 -- Custom BFF Offset 
 
---Stall warning (0=no, 1=stall)
+[0x66C0] = { fsuipc_types.uint8, function() return ap_master:read() == 2 and 1 or 0 end, readonly },
+[0x66C1] = { fsuipc_types.uint8, function() return ap_master:read() == 2 and 1 or 0 end, readonly },
+
+--Supress warning
 [0x0] = { fsuipc_types.uint8, function() return 0 end, readonly },
+--Stall warning (0=no, 1=stall)
 [0x5300] = { fsuipc_types.uint8, function() return 0 end, readonly },
 
 [0x036c] = { fsuipc_types.uint8, function() return stall_warning:read() end, readonly },

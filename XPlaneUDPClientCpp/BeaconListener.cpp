@@ -134,6 +134,7 @@ promise::Defer xplaneudpcpp::BeaconListener::getXPlaneServerBroadcast()
 
                 // have to call this, other receiver will keep a ref to itself
                 receiver.reset();
+
             });
 
         });

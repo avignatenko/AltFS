@@ -15,10 +15,10 @@ namespace xplaneudpcpp
 
          struct ServerInfo
          {
-             int hostId;
-             int version;
+             int hostId = 0;
+             int version = 0;
              std::string host;
-             int port;
+             int port = 0;
          };
 
         BeaconListener();
