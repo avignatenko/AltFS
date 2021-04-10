@@ -3,7 +3,7 @@
 #include <promise-cpp/promise.hpp>
 
 #include <functional>
-#include <boost/asio.hpp>
+#include <asio.hpp>
 #include <thread>
 
 namespace xplaneudpcpp
@@ -29,7 +29,7 @@ namespace xplaneudpcpp
 
     private:
 
-        boost::asio::io_service io_service;
+        asio::io_service io_service;
  
         std::unique_ptr<std::thread> m_thread;
     };

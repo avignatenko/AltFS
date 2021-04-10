@@ -28,14 +28,14 @@
 #define INC_ASIO_TIMER_HPP_
 
 //
-// Promisified timer based on promise-cpp and boost::asio
+// Promisified timer based on promise-cpp and asio
 //
 // Functions --
-//   Defer yield(boost::asio::io_service &io);
-//   Defer delay(boost::asio::io_service &io, uint64_t time_ms);
+//   Defer yield(asio::io_service &io);
+//   Defer delay(asio::io_service &io, uint64_t time_ms);
 //   void cancelDelay(Defer d);
 // 
-//   Defer setTimeout(boost::asio::io_service &io,
+//   Defer setTimeout(asio::io_service &io,
 //                    const std::function<void(bool /*cancelled*/)> &func,
 //                    uint64_t time_ms);
 //   void clearTimeout(Defer d);
@@ -43,15 +43,15 @@
 
 #include "../promise.hpp"
 #include <chrono>
-#include <boost/asio.hpp>
-#include <boost/asio/steady_timer.hpp>
+#include <asio.hpp>
+#include <asio/steady_timer.hpp>
 
 namespace promise {
 
-inline Defer yield(boost::asio::io_service &io){
+inline Defer yield(asio::io_service &io){
     auto defer = newPromise([&io](Defer d) {
 #if BOOST_VERSION >= 106600
-        boost::asio::defer(io, [d]() {
+        asio::defer(io, [d]() {
             d.resolve();
         });
 #else
@@ -65,14 +65,14 @@ inline Defer yield(boost::asio::io_service &io){
     return defer;
 }
 
-inline Defer delay(boost::asio::io_service &io, uint64_t time_ms) {
+inline Defer delay(asio::io_service &io, uint64_t time_ms) {
     return newPromise([time_ms, &io](Defer &d) {
-        boost::asio::steady_timer *timer =
-            pm_new<boost::asio::steady_timer>(io, std::chrono::milliseconds(time_ms));
+        asio::steady_timer *timer =
+            pm_new<asio::steady_timer>(io, std::chrono::milliseconds(time_ms));
         d->any_ = timer;
-        timer->async_wait([d](const boost::system::error_code& error_code) {
+        timer->async_wait([d](const std::error_code &error_code) {
             if (!d->any_.empty()) {
-                boost::asio::steady_timer *timer = any_cast<boost::asio::steady_timer *>(d->any_);
+                asio::steady_timer *timer = any_cast<asio::steady_timer *>(d->any_);
                 d->any_.clear();
                 pm_delete(timer);
                 d.resolve();
@@ -85,7 +85,7 @@ inline void cancelDelay(Defer d) {
     d = d.find_pending();
     if (d.operator->()) {
         if (!d->any_.empty()) {
-            boost::asio::steady_timer *timer = any_cast<boost::asio::steady_timer *>(d->any_);
+            asio::steady_timer *timer = any_cast<asio::steady_timer *>(d->any_);
             d->any_.clear();
             timer->cancel();
             pm_delete(timer);
@@ -94,7 +94,7 @@ inline void cancelDelay(Defer d) {
     }
 }
 
-inline Defer setTimeout(boost::asio::io_service &io,
+inline Defer setTimeout(asio::io_service &io,
                  const std::function<void(bool)> &func,
                  uint64_t time_ms) {
     return delay(io, time_ms).then([func]() {
@@ -108,27 +108,27 @@ inline void clearTimeout(Defer d) {
     cancelDelay(d);
 }
 
-inline Defer wait(boost::asio::io_service &io, Defer d, uint64_t time_ms) {
+inline Defer wait(asio::io_service &io, Defer d, uint64_t time_ms) {
     return newPromise([&io, d, time_ms](Defer &dTimer) {
-        boost::asio::steady_timer *timer =
-            pm_new<boost::asio::steady_timer>(io, std::chrono::milliseconds(time_ms));
+        asio::steady_timer *timer =
+            pm_new<asio::steady_timer>(io, std::chrono::milliseconds(time_ms));
         dTimer->any_ = timer;
 
         d.finally([=](){
             if (!dTimer->any_.empty()) {
-                boost::asio::steady_timer *timer = any_cast<boost::asio::steady_timer *>(dTimer->any_);
+                asio::steady_timer *timer = any_cast<asio::steady_timer *>(dTimer->any_);
                 dTimer->any_.clear();
                 timer->cancel();
                 pm_delete(timer);
             }
         }).call(dTimer);
         
-        timer->async_wait([=](const boost::system::error_code& error_code) {
+        timer->async_wait([=](const std::error_code& error_code) {
             if (!dTimer->any_.empty()) {
-                boost::asio::steady_timer *timer = any_cast<boost::asio::steady_timer *>(dTimer->any_);
+                asio::steady_timer *timer = any_cast<asio::steady_timer *>(dTimer->any_);
                 dTimer->any_.clear();
                 pm_delete(timer);
-                d.reject(boost::system::errc::make_error_code(boost::system::errc::timed_out));
+                d.reject(std::make_error_code(std::errc::timed_out));
             }
         });
     });

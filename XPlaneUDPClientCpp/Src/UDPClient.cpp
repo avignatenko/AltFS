@@ -10,10 +10,10 @@
 
 #include <spdlog/spdlog.h>
 
-#include <boost/asio/error.hpp>
+#include <asio/error.hpp>
 
-using namespace boost::asio;
-using namespace boost::asio::ip;
+using namespace asio;
+using namespace asio::ip;
 
 
 namespace promise
@@ -21,7 +21,7 @@ namespace promise
 
 template<typename RESULT>
 inline void setPromise(Defer d,
-                       boost::system::error_code err,
+                       std::error_code err,
                        const char *errorString,
                        const RESULT &result)
 {
@@ -50,7 +50,7 @@ public:
 
     void stop()
     {
-        boost::asio::dispatch(io_, [this]
+        asio::dispatch(io_, [this]
         {
             m_stopped = true;
             socket_.close();
@@ -98,7 +98,7 @@ public:
                 strcpy(data.refName, dataref.c_str());
                 std::memset(data.refName + dataref.length() + 1, ' ', 500 - dataref.length() - 1);
                 socket_.async_send_to(buffer(&data, sizeof(data)), endpointRemote_,
-                                      [d](const boost::system::error_code& error,
+                                      [d](const std::error_code& error,
                                           std::size_t bytes_transferred)
                 {
                     promise::setPromise(d, error, "writeDataref", bytes_transferred);
@@ -139,7 +139,7 @@ public:
                 std::memset(data.refName + dataref.length() + 1, 0, 400 - dataref.length() - 1);
 
                 socket_.async_send_to(buffer(&data, sizeof(data)), endpointRemote_,
-                                      [d](const boost::system::error_code& error,
+                                      [d](const std::error_code& error,
                                           std::size_t bytes_transferred)
                 {
                     promise::setPromise(d, error, "subscribeDataref", bytes_transferred);
@@ -168,7 +168,7 @@ public:
 
 
                 socket_.async_send_to(buffer(&data, sizeof(data)), endpointRemote_,
-                                      [d](const boost::system::error_code& error,
+                                      [d](const std::error_code& error,
                                           std::size_t bytes_transferred)
                 {
                     promise::setPromise(d, error, "unsubscribeDataref", bytes_transferred);
@@ -290,8 +290,8 @@ private:
     {
         return promise::newPromise([this](promise::Defer d)
         {
-            socket_.async_receive_from(boost::asio::buffer(message), senderEndpoint,
-                                       [=](const boost::system::error_code& error,
+            socket_.async_receive_from(asio::buffer(message), senderEndpoint,
+                                       [=](const std::error_code& error,
                                            std::size_t reply_length)
             {
                 promise::setPromise(d, error, "doReceive", reply_length);

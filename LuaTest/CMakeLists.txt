@@ -14,7 +14,7 @@ target_sources(${PROJECT_NAME}
 	    "Src/Pch.h")
 
 
-  target_link_libraries(${PROJECT_NAME}  PRIVATE promise-cpp LuaEngine XPlaneUDPClientCpp spdlog::spdlog Boost::boost)
+target_link_libraries(${PROJECT_NAME}  PRIVATE promise-cpp LuaEngine XPlaneUDPClientCpp CONAN_PKG::spdlog )
 
-  target_precompile_headers(${PROJECT_NAME} PRIVATE "Src/Pch.h")
+target_precompile_headers(${PROJECT_NAME} PRIVATE "Src/Pch.h")
 

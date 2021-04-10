@@ -2,7 +2,7 @@
 
 #include <promise-cpp/promise.hpp>
 
-#include <boost/asio.hpp>
+#include <asio.hpp>
 
 #include <string>
 #include <functional>
@@ -33,9 +33,9 @@ public:
 private:
 
    
-   boost::asio::io_service io_;
+   asio::io_service io_;
     
-   boost::asio::ip::udp::socket socket_;
+   asio::ip::udp::socket socket_;
    std::unique_ptr<ClientSender> m_clientSender;
    std::unique_ptr<ClientReceiver> m_clientReceiver;
    std::unique_ptr<std::thread> m_thread;
