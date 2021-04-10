@@ -25,12 +25,12 @@ set(CMAKE_CONFIGURATION_TYPES Debug Release)
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 if(is_multi_config)
-    message("Multi config generator detected")
+    message(STATUS "Multi config generator detected")
     set(conan_configs_to_create ${CMAKE_CONFIGURATION_TYPES})
     set(conan_cmake_file conanbuildinfo_multi.cmake)
     set(conan_generator cmake_multi)
 else()
-    message("Single config generator detected")
+    message(STATUS "Single config generator detected")
     set(conan_configs_to_create ${CMAKE_BUILD_TYPE})
     set(conan_cmake_file conanbuildinfo.cmake)
     set(conan_generator cmake)
@@ -40,7 +40,6 @@ conan_cmake_configure(REQUIRES
                         asio/1.18.1
                         spdlog/1.8.5
                         sol2/3.2.3
-                      OPTIONS boost:magic_autolink=True
                       GENERATORS ${conan_generator})
 
 foreach(config ${conan_configs_to_create})
