@@ -1,11 +1,11 @@
-#include "stdafx.h" 
+#include "stdafx.h"
 
-#include "FSUIPCEngine.h"
 #include <XPlaneUDPClientCpp/BeaconListener.h>
+#include "FSUIPCEngine.h"
 
 #include <spdlog/spdlog.h>
 
-#pragma pack (push, r1, 1)
+#pragma pack(push, r1, 1)
 
 typedef struct tagXC_ACTION_READ_HDR
 {
@@ -22,29 +22,23 @@ typedef struct tagXC_ACTION_WRITE_HDR
     DWORD size;
 } XC_ACTION_WRITE_HDR;
 
+#pragma pack(pop, r1)
 
-#pragma pack (pop, r1)
+#define XC_ACTION_READ_64 4
+#define XC_ACTION_READ 1
+#define XC_ACTION_WRITE 2
 
-
-#define XC_ACTION_READ				1
-#define XC_ACTION_WRITE			2
-
-#define XC_RETURN_FAILURE			0
-#define XC_RETURN_SUCCESS			1
-
+#define XC_RETURN_FAILURE 0
+#define XC_RETURN_SUCCESS 1
 
 FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
-    : m_lua(scriptPath)
-    , m_xPlaneModule(m_lua)
-    , m_logModule(m_lua)
-   
+    : m_lua(scriptPath), m_xPlaneModule(m_lua), m_logModule(m_lua)
+
 {
-    
 }
 
 FSUIPCEngine::~FSUIPCEngine()
 {
-   
     // fixme: when to clear?
     for (auto& elem : m_fileMap)
     {
@@ -56,15 +50,15 @@ FSUIPCEngine::~FSUIPCEngine()
 promise::Defer FSUIPCEngine::init()
 {
     return m_xPlaneModule.discover()
-        .then([this](xplaneudpcpp::BeaconListener::ServerInfo& info){return m_xPlaneModule.connect(info.host, info.port);})
-        .then([&]{return m_logModule.init();})
-        .then([&]{return m_xPlaneModule.init();})
-        .then([&]{return m_lua.load();});
+        .then([this](xplaneudpcpp::BeaconListener::ServerInfo& info)
+              { return m_xPlaneModule.connect(info.host, info.port); })
+        .then([&] { return m_logModule.init(); })
+        .then([&] { return m_xPlaneModule.init(); })
+        .then([&] { return m_lua.load(); });
 }
 
 LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
 {
-
     XC_ACTION_READ_HDR* pHdrR = NULL;
     XC_ACTION_WRITE_HDR* pHdrW = NULL;
 
@@ -72,7 +66,6 @@ LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
     LRESULT result = XC_RETURN_SUCCESS;
     HANDLE hMap;
     BYTE* pView;
-
 
     const auto found = m_fileMap.find(atom);
     if (found == m_fileMap.end())
@@ -98,6 +91,7 @@ LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
     {
         switch (*pdw)
         {
+        case XC_ACTION_READ_64:
         case XC_ACTION_READ:
             pHdrR = reinterpret_cast<XC_ACTION_READ_HDR*>(pdw);
 
@@ -124,27 +118,22 @@ LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
     }
 
     return result;
-
 }
 
 void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
 {
     spdlog::debug("Read request, offset {0:#x}, size {1}", offset, size);
-  
+
     m_lua.readFromSim(offset, size, static_cast<std::byte*>(data));
-
 }
-
 
 promise::Defer FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
 {
-    return promise::newPromise([&](promise::Defer& d)
-    {
-        spdlog::debug("Write request, offset {0:#x}, size {1}", offset, size);
+    return promise::newPromise(
+        [&](promise::Defer& d)
+        {
+            spdlog::debug("Write request, offset {0:#x}, size {1}", offset, size);
 
-        m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
-    });
-
-
+            m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
+        });
 }
-

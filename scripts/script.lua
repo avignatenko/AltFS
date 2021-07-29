@@ -53,9 +53,9 @@ offsets=
 {
 
 -- version, etc.
-[0x3304] = { fsuipc_types.uint16, function() return 0x0008 end, readonly },
-[0x3306] = { fsuipc_types.uint16, function() return 0x5000 end, readonly },
-[0x3308] = { fsuipc_types.uint16, function() return 0x0008 end, readonly },
+[0x3304] = { fsuipc_types.uint32, function() return 0xFFFFFFFF end, readonly },
+--[0x3306] = { fsuipc_types.uint16, function() return 0x5000 end, readonly },
+[0x3308] = { fsuipc_types.uint32, function() return 0x0000DEFA end, readonly },
 
 -- Turbine Engine 1 jet thrust, in pounds, as a double (FLOAT64). This is the jet thrust. See 2410 for propeller thrust (turboprops have both)
 [0x204c] = { fsuipc_types.float64, function() return 0 end, readonly },

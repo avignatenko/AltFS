@@ -63,13 +63,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         EndPaint(hwnd, &ps);
         return 0;
     }
-    case WM_CUSTOM_MESSAGE:
-    {
-        auto* func = reinterpret_cast<std::function<void()>*>(wParam);
-        (*func)();
-        delete func;
-        return 0;
-    }
     }
 
     if (uMsg == XC_CALL)
@@ -162,6 +155,15 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     MSG msg = {};
     while (GetMessage(&msg, NULL, 0, 0))
     {
+        // process internal runner message queue
+        if (msg.message == WM_CUSTOM_MESSAGE)
+        {
+            auto* func = reinterpret_cast<std::function<void()>*>(msg.wParam);
+            (*func)();
+            delete func;
+            continue;
+        }
+
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
