@@ -12,13 +12,8 @@ target_sources(${PROJECT_NAME}
     PRIVATE 
         "Src/FSUIPCEngine.cpp"
         "Src/FSUIPCEngine.h"
-        "Src/resource.h"
         "Src/StdAfx.h"
         "Src/AltFS.cpp"
-        "Src/AltFS.h"
-        "Src/AltFS.rc"
-        "Src/AltFSDlg.cpp"
-        "Src/AltFSDlg.h"
        )
 
 
@@ -28,3 +23,7 @@ target_sources(${PROJECT_NAME}
 
   target_compile_definitions(${PROJECT_NAME} PRIVATE _AFXDLL)
 
+
+  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_directory
+                    ${CMAKE_SOURCE_DIR}/scripts/ $<TARGET_FILE_DIR:${PROJECT_NAME}>/lua)
