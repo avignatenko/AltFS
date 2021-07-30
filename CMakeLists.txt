@@ -4,6 +4,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project ("AltFS" LANGUAGES CXX)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Bin)
 # global configuration
 enable_testing()
 
