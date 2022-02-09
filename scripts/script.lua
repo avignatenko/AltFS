@@ -51,6 +51,7 @@ local barometer_current_inhg = xplane.dataref:new("sim/weather/barometer_current
 
 local readonly = function(value) log(loglevel.error, "error: can't write into readonly var") end
 
+local cl_trim = 0
 
 offsets=
 {
@@ -79,6 +80,10 @@ offsets=
 [0x66e8] = { fsuipc_types.float64, function() return acf_stall_warn_alpha:read() end, readonly },
 --# Custom offset - 0x66F8 Engine 1 wash in m/s
 [0x66f8] = { fsuipc_types.float64, function() return dvinc_0:read() end, readonly },
+-- # Custom offset for trim value (to be removed!)
+[0x66c4] = {fsuipc_types.sint16, function() return cl_trim end, function(value) cl_trim = value end},
+-- # Custom offset for cl engage
+[0x66c8] = {fsuipc_types.uint8, function() return 0 end, readonly},
 
 --Stall warning (0=no, 1=stall)
 [0x5300] = { fsuipc_types.uint8, function() return 0 end, readonly },
@@ -168,5 +173,26 @@ offsets=
 -- Pressure Altitude (metres), double float. 
 -- FIXME!! : true altitude convert to pressure
 [0x34B0] = { fsuipc_types.float64, function() return elevation:read() end, readonly },
+-- Simulation rate *256 (i.e. 256=1x)
+-- FIXME!! : always 1.0 for now
+[0x0C1A] = { fsuipc_types.uint16, function() return 1 * 256 end, readonly },
+
+-- Surface type as a 32-bit integer
+-- x-plane
+--surf_none        0,
+--surf_water        1,
+--surf_concrete        2,
+--surf_asphalt   3,
+--surf_grass        4,
+--surf_dirt        5,
+--surf_gravel        6,
+--surf_lake        7,
+--surf_snow        8,
+--surf_shoulder        9,
+--surf_blastpad        10,
+--surf_grnd        11,
+--surf_object        12 
+-- fixme: add surface handling
+[0X31E8] = { fsuipc_types.uint16, function() return 2 end, readonly },
 
 }
