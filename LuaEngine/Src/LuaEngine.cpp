@@ -110,6 +110,12 @@ promise::Defer LuaEngine::readFromSim(uint32_t offset, uint32_t size, std::byte*
                             *reinterpret_cast<int16_t*>(data) = value;
                             break;
                         }
+                        case 7:
+                        {
+                            int32_t value = result.get<int32_t>();
+                            *reinterpret_cast<int32_t*>(data) = value;
+                            break;
+                        }
 
                         case 10:
                         {
