@@ -33,10 +33,10 @@ local eng2_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[1]"
 local true_airspeed = xplane.dataref:new("sim/flightmodel/position/true_airspeed", xplane.types.float, freq.low) 
 local point_thrust = xplane.dataref:new("sim/flightmodel/engine/POINT_thrust[0]", xplane.types.float, freq.low) 
 local stall_warning = xplane.dataref:new("sim/cockpit2/annunciators/stall_warning", xplane.types.int, freq.low) 
-local alpha = xplane.dataref:new("sim/flightmodel/position/alpha", xplane.types.float, freq.medium) 
-local beta = xplane.dataref:new("sim/flightmodel/position/beta", xplane.types.float, freq.medium) 
+local alpha = xplane.dataref:new("sim/flightmodel/position/alpha", xplane.types.float, freq.high) 
+local beta = xplane.dataref:new("sim/flightmodel/position/beta", xplane.types.float, freq.high) 
 local crashed = xplane.dataref:new("sim/flightmodel2/misc/has_crashed", xplane.types.int, freq.low) 
-local aoa_degrees = xplane.dataref:new("sim/flightmodel2/misc/AoA_angle_degrees", xplane.types.int, freq.medium) -- Positive means aircracft nose is above the flight path in aircraft coordinates.
+local aoa_degrees = xplane.dataref:new("sim/flightmodel2/misc/AoA_angle_degrees", xplane.types.int, freq.high) -- Positive means aircracft nose is above the flight path in aircraft coordinates.
 local gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio", xplane.types.float, freq.medium) 
 local hydraulic_pressure_low = xplane.dataref:new("sim/cockpit2/annunciators/hydraulic_pressure", xplane.types.int, freq.verylow) 
 local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.high) 
@@ -47,6 +47,7 @@ local engine_rpm_0 = xplane.dataref:new("sim/cockpit2/engine/indicators/engine_s
 local lail1def = xplane.dataref:new("sim/flightmodel/controls/lail1def", xplane.types.float, freq.high) 
 local rho = xplane.dataref:new("sim/weather/rho", xplane.types.float, freq.verylow) 
 local barometer_current_inhg = xplane.dataref:new("sim/weather/barometer_current_inhg", xplane.types.float, freq.verylow) 
+local surface_texture_type = xplane.dataref:new("sim/flightmodel/ground/surface_texture_type", xplane.types.int, freq.verylow) 
 
 
 local readonly = function(value) log(loglevel.error, "error: can't write into readonly var") end
@@ -193,6 +194,15 @@ offsets=
 --surf_grnd        11,
 --surf_object        12 
 -- fixme: add surface handling
-[0X31E8] = { fsuipc_types.uint16, function() return 2 end, readonly },
+
+[0x31E8] = { fsuipc_types.uint32, function()
+
+        local xplane2fsx_ground = { [4] = 1, [5] = 1, [6] = 1, [8] = 1, 
+                                    [11] = 2, [1] = 2, [7] = 2 }
+        local surface =  surface_texture_type:read()
+        local fsx_surface = xplane2fsx_ground[surface]
+        if fsx_surface == nil then return 0 end
+        return fsx_surface
+    end, readonly }
 
 }
