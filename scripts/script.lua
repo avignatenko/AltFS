@@ -36,7 +36,7 @@ local stall_warning = xplane.dataref:new("sim/cockpit2/annunciators/stall_warnin
 local alpha = xplane.dataref:new("sim/flightmodel/position/alpha", xplane.types.float, freq.high) 
 local beta = xplane.dataref:new("sim/flightmodel/position/beta", xplane.types.float, freq.high) 
 local crashed = xplane.dataref:new("sim/flightmodel2/misc/has_crashed", xplane.types.int, freq.low) 
-local aoa_degrees = xplane.dataref:new("sim/flightmodel2/misc/AoA_angle_degrees", xplane.types.int, freq.high) -- Positive means aircracft nose is above the flight path in aircraft coordinates.
+local aoa_degrees = xplane.dataref:new("sim/flightmodel2/misc/AoA_angle_degrees", xplane.types.float, freq.high) -- Positive means aircracft nose is above the flight path in aircraft coordinates.
 local gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio", xplane.types.float, freq.medium) 
 local hydraulic_pressure_low = xplane.dataref:new("sim/cockpit2/annunciators/hydraulic_pressure", xplane.types.int, freq.verylow) 
 local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.high) 
@@ -112,7 +112,10 @@ offsets=
 --G Force: units unknown, but /624 seems to give quite sensible values. See also offset 1140
 [0x11ba] = { fsuipc_types.sint16, function() return g_nrml:read() * 625 end, readonly },
 -- Angle of Attack Indicator angle, with 360 degrees = 65536. The value 32767 is 180 degrees Angle of Attack. The angle is expressed in the usual FS 16-bit angle units (360 degrees = 65536), with 180 degrees pointing to the 0.0 position (right and down about 35 degrees in a Boeing type AofA indicator). Note that the indicator angle actually decreases as the wing AofA increases.
-[0x11be] = { fsuipc_types.uint16, function() return aoa_degrees:read() * 65536 end, readonly },
+[0x11be] = { fsuipc_types.uint16, function() 
+   local aoa = aoa_degrees:read()
+   if aoa < 0 then return 16384 end
+   return (1 + aoa / acf_stall_warn_alpha:read()) / 2 * 65535 / 2 end, readonly },
 --Fail mode, 0 ok, Hydraulics failure = 1
 [0x0b62] = { fsuipc_types.uint8, function() return 0 end, readonly }, --  fixme: generalize
 --Gear position (right): 0=full up, 16383=full down
