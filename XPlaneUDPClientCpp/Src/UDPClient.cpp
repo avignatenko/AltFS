@@ -185,9 +185,10 @@ private:
 class ClientReceiver : public Client
 {
 public:
-    ClientReceiver(io_service& io, udp::socket& socket, ClientSender& sender)
+    ClientReceiver(io_service& io, udp::socket& socket, ClientSender& sender, int16_t baseId)
         : Client(io, socket)
         , sender_(sender)
+        , baseId_(baseId)
     {
         spdlog::info("X-Plane UDP Receiver client init");
 
@@ -224,7 +225,7 @@ public:
         getDatarefNum(dataref)
             .then([=](size_t num)
         {
-            sender_.subscribeDataref(dataref, freq, num);
+            sender_.subscribeDataref(dataref, freq, num + baseId_);
             datarefs_[num].second = callback;
         });
 
@@ -239,7 +240,7 @@ public:
             .then([=](int num)
         {
             // send unsubscribe
-            sender_.unsubscribeDataref(num, dataref);
+            sender_.unsubscribeDataref(num + baseId_, dataref);
             datarefs_[num].second = nullptr;
         });
 
@@ -277,7 +278,7 @@ private:
 
         struct Value
         {
-            int num;
+            int32_t num;
             float value;
         };
 
@@ -315,8 +316,15 @@ private:
             {
                 const ReceiveDataref::Value& valueData = message->value[i];
 
-                if (valueData.num < 0 || valueData.num >= (int)datarefs_.size()) continue; // fixme: what's that?                   
-                auto& dataref = datarefs_[valueData.num];
+                int correctedNum = valueData.num - baseId_;
+
+                if (correctedNum < 0 || correctedNum >= (int)datarefs_.size())
+                {
+                    // not our message (fixme, how to unsubscribe?)
+                    continue; 
+                }
+                                   
+                auto& dataref = datarefs_[correctedNum];
 
                 if (dataref.second) // subscribed?
                     dataref.second(valueData.value);
@@ -332,10 +340,11 @@ private:
     ClientSender& sender_;
     ReceiveDataref message[1];
     udp::endpoint senderEndpoint;
+    int16_t baseId_;
 
 };
 
-xplaneudpcpp::UDPClient::UDPClient(const std::string& address, int port): socket_(io_)
+xplaneudpcpp::UDPClient::UDPClient(const std::string& address, int port, int16_t baseId) : socket_(io_)
 {
     spdlog::info("X-Plane UDP Client created with address {}:{}", address, port);
     const int localPort = 50000;
@@ -347,7 +356,7 @@ xplaneudpcpp::UDPClient::UDPClient(const std::string& address, int port): socket
     socket_.bind(sendEndpoint);
 
     m_clientSender = std::make_unique<ClientSender>(io_, socket_, address, port);
-    m_clientReceiver = std::make_unique<ClientReceiver>(io_, socket_, *m_clientSender);
+    m_clientReceiver = std::make_unique<ClientReceiver>(io_, socket_, *m_clientSender, baseId);
 
     m_thread = std::make_unique<std::thread>([this]
     {

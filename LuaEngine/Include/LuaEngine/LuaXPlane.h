@@ -16,7 +16,7 @@ public:
     ~LuaXPlane();
 
     promise::Defer discover();
-    promise::Defer connect(const std::string& address, int port);
+    promise::Defer connect(const std::string& address, int port, int16_t baseId);
 
     promise::Defer init();
 

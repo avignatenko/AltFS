@@ -22,7 +22,7 @@ local local_time_minutes = xplane.dataref:new("sim/cockpit2/clock_timer/local_ti
 local local_time_seconds = xplane.dataref:new("sim/cockpit2/clock_timer/local_time_seconds", xplane.types.int, freq.verylow) 
 local cgz_ref_to_default = xplane.dataref:new("sim/flightmodel/misc/cgz_ref_to_default", xplane.types.float, freq.verylow) 
 local acf_stall_warn_alpha = xplane.dataref:new("sim/aircraft/overflow/acf_stall_warn_alpha", xplane.types.float, freq.once) 
-local dvinc_0 = xplane.dataref:new("sim/flightmodel/jetwash/DVinc[0]", xplane.types.float, freq.medium) 
+local dvinc_0 = xplane.dataref:new("sim/flightmodel2/engines/jetwash_mtr_sec[0]", xplane.types.float, freq.medium) 
 local gearF1 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium) 
 local gearF2 = xplane.dataref:new("sim/flightmodel/forces/fnrml_gear", xplane.types.float, freq.medium) 
 local gearF3 = xplane.dataref:new("sim/flightmodel/forces/faxil_gear", xplane.types.float, freq.medium) 
@@ -50,7 +50,7 @@ local barometer_current_inhg = xplane.dataref:new("sim/weather/barometer_current
 local surface_texture_type = xplane.dataref:new("sim/flightmodel/ground/surface_texture_type", xplane.types.int, freq.verylow) 
 
 
-local readonly = function(value) log(loglevel.error, "error: can't write into readonly var") end
+local readonly = function(value) log(loglevel.err, "error: can't write into readonly var") end
 
 local cl_trim = 0
 
@@ -72,7 +72,7 @@ offsets=
 -- Custom BFF Offset 
 
 [0x66C0] = { fsuipc_types.uint8, function() return ap_master:read() == 2 and 1 or 0 end, readonly },
-[0x66C1] = { fsuipc_types.uint8, function() return ap_master:read() == 2 and 1 or 0 end, readonly },
+[0x66C1] = { fsuipc_types.uint8, function() return 0 end, readonly }, -- always off now now
 --# Created offset - 0x6030 Aircraft ground speed, double, in m/s.
 [0x6030] = { fsuipc_types.float64, function() return ground_speed:read() end, readonly },
 --# Custom offset - 0x66E0 CG Position Displacement from default in meters  (changed from previous 6700)

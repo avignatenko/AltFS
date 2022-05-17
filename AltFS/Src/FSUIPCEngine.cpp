@@ -49,9 +49,13 @@ FSUIPCEngine::~FSUIPCEngine()
 
 promise::Defer FSUIPCEngine::init()
 {
+    // init with current prcoess  lower 16 bits
+    int currentProcessId = GetCurrentProcessId();
+    int16_t startId = currentProcessId % 0xFFFF;
+
     return m_xPlaneModule.discover()
-        .then([this](xplaneudpcpp::BeaconListener::ServerInfo& info)
-              { return m_xPlaneModule.connect(info.host, info.port); })
+        .then([this, startId](xplaneudpcpp::BeaconListener::ServerInfo& info)
+              { return m_xPlaneModule.connect(info.host, info.port, startId); })
         .then([&] { return m_logModule.init(); })
         .then([&] { return m_xPlaneModule.init(); })
         .then([&] { return m_lua.load(); });

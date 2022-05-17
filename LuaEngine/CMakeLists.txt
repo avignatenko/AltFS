@@ -27,3 +27,4 @@ target_sources(${PROJECT_NAME} PRIVATE
 
   target_precompile_headers(${PROJECT_NAME} PRIVATE "Src/StdAfx.h")
 
+  target_compile_definitions(${PROJECT_NAME} PUBLIC SOL_NO_CHECK_NUMBER_PRECISION=1)

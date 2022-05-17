@@ -138,14 +138,21 @@ int main(int argc, char** argv)
     
     int16_t currentposition = -16383;
 
+    // init with current prcoess  lower 16 bits
+    int currentProcessId = GetCurrentProcessId();
+    int16_t startId = currentProcessId % 0xFFFF;
+
     Timer t(std::chrono::milliseconds(10), &d, [&]
     {
         // read
         int32_t data32;
         int16_t data16;
         int8_t data8;
-        
-        //m_lua.readFromSim(0x0bc0, 2, (std::byte*)&data16);
+        double dataf;
+
+        m_lua.readFromSim(0x66f8, 8, (std::byte*)&dataf);
+        std::cout << dataf << std::endl;
+         
         //m_lua.readFromSim(0x07bc, 4, (std::byte*)&data32);
         //m_lua.readFromSim(0x07d0, 4, (std::byte*)&data32);
         //m_lua.readFromSim(0x0840, 2, (std::byte*)&data16);
@@ -155,15 +162,15 @@ int main(int argc, char** argv)
         //std::cout << "pos: " << data16 << " " << std::endl;
 	
         // write
-         m_lua.writeToSim(0x0BB2, 2, (std::byte*)&currentposition);
+         //m_lua.writeToSim(0x0BB2, 2, (std::byte*)&currentposition);
 
-         m_lua.writeToSim(0x0BB6, 2, (std::byte*)&currentposition);
+         //m_lua.writeToSim(0x0BB6, 2, (std::byte*)&currentposition);
 
         //m_lua.writeToSim(0x0CC1, 2, (std::byte*)&currentposition);
 
-         if (currentposition >= 16383) 
-             s_exit = true;
-         else
+         //if (currentposition >= 16383) 
+        //     s_exit = true;
+        // else
             ++currentposition;
 
          // read
@@ -172,18 +179,19 @@ int main(int argc, char** argv)
          //m_lua.readFromSim(0x0BB2, 2, (std::byte*)&pos0);
          //m_lua.readFromSim(0x0BB6, 2, (std::byte*)&pos1);
          //std::cout << "pos: " << pos0 << " " << pos1 << std::endl;
-
+         /*
          double time = 0.0;
           m_lua.readFromSim(0x2ea8, 8, (std::byte*)&time);
-         std::cout << (double)time << std::endl;
+         std::cout << (double)time << std::endl;*/
     });
 
-     //m_xPlaneModule.discover()
-     //   .then([&](xplaneudpcpp::BeaconListener::ServerInfo& info)
-     //   {
-     //       return m_xPlaneModule.connect(info.host, info.port);
-     //   })
-     m_xPlaneModule.connect("192.168.114", 49000)
+
+     m_xPlaneModule.discover()
+        .then([&](xplaneudpcpp::BeaconListener::ServerInfo& info)
+        {
+            return m_xPlaneModule.connect(info.host, info.port, startId);
+        })
+     //m_xPlaneModule.connect("192.168.0.114", 49000)
         .then([&]{ return luaLogging.init();})
         .then([&]{ return m_xPlaneModule.init();})
         .then([&]{ return m_lua.load();})

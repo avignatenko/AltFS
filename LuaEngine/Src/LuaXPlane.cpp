@@ -96,11 +96,11 @@ promise::Defer LuaXPlane::discover()
     });
 }
 
-promise::Defer LuaXPlane::connect(const std::string& address, int port)
+promise::Defer LuaXPlane::connect(const std::string& address, int port, int16_t baseId)
 {
-    return newPromiseAsync(api_.getLuaRunner(), [this, address, port](Runner* caller, promise::Defer p)
+    return newPromiseAsync(api_.getLuaRunner(), [this, address, port, baseId](Runner* caller, promise::Defer p)
     {
-        xplaneClient_ = std::make_unique<xplaneudpcpp::UDPClient>(address, port);
+        xplaneClient_ = std::make_unique<xplaneudpcpp::UDPClient>(address, port, baseId);
         xplaneClient_->connect()
             .then([=]{ caller->run([=]{p.resolve();});});
     });

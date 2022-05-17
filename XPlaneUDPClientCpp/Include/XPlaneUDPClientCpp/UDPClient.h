@@ -20,7 +20,7 @@ class UDPClient
 {
 public:
 
-    UDPClient(const std::string& address, int port);
+    UDPClient(const std::string& address, int port, int16_t baseId);
     ~UDPClient();
 
     promise::Defer connect();
