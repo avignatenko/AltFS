@@ -94,14 +94,18 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     std::filesystem::path exeName = static_cast<LPCSTR>(path);
     std::filesystem::path exePath = exeName.parent_path();
 
-    // Set the default logger to file logger
-    spdlog::set_level(spdlog::level::info);  // Set global log level to debug
+     // init logging
 
-    // auto logFilename = exePath / "altfs.log";
-    // auto file_logger = spdlog::basic_logger_mt("basic_logger", logFilename.string());
-    // spdlog::set_default_logger(file_logger);
-    auto console = spdlog::stdout_color_mt("console");
-    spdlog::set_default_logger(console);
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    console_sink->set_level(spdlog::level::info);
+
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("altfs.log", true);
+    file_sink->set_level(spdlog::level::info);
+
+    auto logger = std::make_shared<spdlog::logger>("multi_sink", spdlog::sinks_init_list{console_sink, file_sink});
+    logger->set_level(spdlog::level::info);
+
+    spdlog::set_default_logger(logger);
 
     spdlog::info("AltFs started");
 

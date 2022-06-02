@@ -7,13 +7,21 @@
 
 #pragma pack(push, r1, 1)
 
-typedef struct tagXC_ACTION_READ_HDR
+typedef struct tagXC_ACTION_READ_HDR_64
 {
     DWORD action;
     DWORD offset;
     DWORD size;
-    void* data;
-} XC_ACTION_READ_HDR;
+    BYTE data[8];  // used only by client
+} XC_ACTION_READ_HDR_64;
+
+typedef struct tagXC_ACTION_READ_HDR_32
+{
+    DWORD action;
+    DWORD offset;
+    DWORD size;
+    BYTE data[4];  // used only by client
+} XC_ACTION_READ_HDR_32;
 
 typedef struct tagXC_ACTION_WRITE_HDR
 {
@@ -54,8 +62,9 @@ promise::Defer FSUIPCEngine::init()
     int16_t startId = currentProcessId % 0xFFFF;
 
     return m_xPlaneModule.discover()
-        .then([this, startId](xplaneudpcpp::BeaconListener::ServerInfo& info)
-              { return m_xPlaneModule.connect(info.host, info.port, startId); })
+        .then([this, startId](xplaneudpcpp::BeaconListener::ServerInfo& info) {
+            return m_xPlaneModule.connect(info.host, info.port, startId);
+        })
         .then([&] { return m_logModule.init(); })
         .then([&] { return m_xPlaneModule.init(); })
         .then([&] { return m_lua.load(); });
@@ -63,9 +72,6 @@ promise::Defer FSUIPCEngine::init()
 
 LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
 {
-    XC_ACTION_READ_HDR* pHdrR = NULL;
-    XC_ACTION_WRITE_HDR* pHdrW = NULL;
-
     ATOM atom = (ATOM)wParam;
     LRESULT result = XC_RETURN_SUCCESS;
     HANDLE hMap;
@@ -96,18 +102,33 @@ LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
         switch (*pdw)
         {
         case XC_ACTION_READ_64:
-        case XC_ACTION_READ:
-            pHdrR = reinterpret_cast<XC_ACTION_READ_HDR*>(pdw);
+        {
+            spdlog::debug("xc read 64");
+            tagXC_ACTION_READ_HDR_64* pHdrR = reinterpret_cast<tagXC_ACTION_READ_HDR_64*>(pdw);
 
-            readFromSim(pHdrR->offset, pHdrR->size, pNext + sizeof(XC_ACTION_READ_HDR));
+            readFromSim(pHdrR->offset, pHdrR->size, pNext + sizeof(tagXC_ACTION_READ_HDR_64));
 
-            pNext += sizeof(XC_ACTION_READ_HDR);
+            pNext += sizeof(tagXC_ACTION_READ_HDR_64);
             pNext += pHdrR->size;
             pdw = reinterpret_cast<DWORD*>(pNext);
             break;
+        }
+        case XC_ACTION_READ:
+        {
+            spdlog::debug("xc read 32");
+            tagXC_ACTION_READ_HDR_32* pHdrR = reinterpret_cast<tagXC_ACTION_READ_HDR_32*>(pdw);
 
+            readFromSim(pHdrR->offset, pHdrR->size, pNext + sizeof(tagXC_ACTION_READ_HDR_32));
+
+            pNext += sizeof(tagXC_ACTION_READ_HDR_32);
+            pNext += pHdrR->size;
+            pdw = reinterpret_cast<DWORD*>(pNext);
+            break;
+        }
         case XC_ACTION_WRITE:
-            pHdrW = reinterpret_cast<XC_ACTION_WRITE_HDR*>(pdw);
+        {
+            spdlog::debug("write");
+            XC_ACTION_WRITE_HDR* pHdrW = reinterpret_cast<XC_ACTION_WRITE_HDR*>(pdw);
 
             writeToSim(pHdrW->offset, pHdrW->size, pNext + sizeof(XC_ACTION_WRITE_HDR));
 
@@ -115,9 +136,13 @@ LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
             pNext += pHdrW->size;
             pdw = reinterpret_cast<DWORD*>(pNext);
             break;
+        }
         default:
+        {
+            spdlog::debug("Unknown action: {}", *pdw);
             *pdw = 0;
             break;
+        }
         }
     }
 
@@ -133,11 +158,9 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
 
 promise::Defer FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
 {
-    return promise::newPromise(
-        [&](promise::Defer& d)
-        {
-            spdlog::debug("Write request, offset {0:#x}, size {1}", offset, size);
+    return promise::newPromise([&](promise::Defer& d) {
+        spdlog::debug("Write request, offset {0:#x}, size {1}", offset, size);
 
-            m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
-        });
+        m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
+    });
 }

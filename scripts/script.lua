@@ -48,7 +48,7 @@ local lail1def = xplane.dataref:new("sim/flightmodel/controls/lail1def", xplane.
 local rho = xplane.dataref:new("sim/weather/rho", xplane.types.float, freq.verylow) 
 local barometer_current_inhg = xplane.dataref:new("sim/weather/barometer_current_inhg", xplane.types.float, freq.verylow) 
 local surface_texture_type = xplane.dataref:new("sim/flightmodel/ground/surface_texture_type", xplane.types.int, freq.verylow) 
-
+local turbulence_percent = xplane.dataref:new("sim/weather/wind_turbulence_percent", xplane.types.int, freq.verylow) 
 
 local readonly = function(value) log(loglevel.err, "error: can't write into readonly var") end
 
@@ -90,7 +90,7 @@ offsets=
 [0x5300] = { fsuipc_types.uint8, function() return 0 end, readonly },
 
 [0x036c] = { fsuipc_types.uint8, function() return stall_warning:read() end, readonly },
-[0x0588]={ fsuipc_types.float64, function() return local_time_sec:read() end, readonly },
+[0x0588] = { fsuipc_types.float64, function() return local_time_sec:read() end, readonly },
 -- Aircraft on ground flag (0=airborne, 1=on ground). Not updated in Slew mode
 --# Substitution offset - 0x0366 - On-ground indicator - hardcoded offset is not sensitive enough for vibration detection
 [0x0366] = { fsuipc_types.uint16, function() return (gearF1:read() + gearF2:read() + gearF3:read() > 0) and 1 or 0 end, readonly },
@@ -206,6 +206,7 @@ offsets=
         local fsx_surface = xplane2fsx_ground[surface]
         if fsx_surface == nil then return 0 end
         return fsx_surface
-    end, readonly }
+    end, readonly },
+[0x0E98] = { fsuipc_types.uint16, function() return turbulence_percent:read() * 255 end, readonly }
 
 }
