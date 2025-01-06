@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <thread>
 
 #define PM_MULTITHREAD
 #include <promise-cpp/promise.hpp>

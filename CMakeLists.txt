@@ -34,15 +34,21 @@ find_package(sol2)
 find_package(continuable)
 
 # windows defaults
-add_definitions(-D_WIN32_WINNT=0x0A00)
+if(WIN32)
+    add_definitions(-D_WIN32_WINNT=0x0A00)
+endif()
 
 if(MSVC)
     add_compile_options(/MP)
 endif()
 
 # Include sub-projects.
+
+if(WIN32)
+    add_subdirectory("LuaEngine")
+    add_subdirectory("LuaTest")
+    add_subdirectory("AltFS")
+endif()
+
 add_subdirectory("promise-cpp")
 add_subdirectory("XPlaneUDPClientCpp")
-add_subdirectory("LuaEngine")
-add_subdirectory("LuaTest")
-add_subdirectory("AltFS")

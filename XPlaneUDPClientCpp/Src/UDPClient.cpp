@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include "../Include/XPlaneUDPClientCpp/ActiveObject.h"
 #include "../Include/XPlaneUDPClientCpp/UDPClient.h"
