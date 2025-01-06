@@ -314,7 +314,8 @@ private:
     int16_t baseId_;
 };
 
-xplaneudpcpp::UDPClient::UDPClient(const std::string& address, int port, int16_t baseId) : socket_(io_)
+xplaneudpcpp::UDPClient::UDPClient(asio::any_io_executor ex, const std::string& address, int port, int16_t baseId)
+    : socket_(io_)
 {
     spdlog::info("X-Plane UDP Client created with address {}:{}", address, port);
     const int localPort = 50000;
@@ -355,9 +356,9 @@ xplaneudpcpp::UDPClient::~UDPClient()
     spdlog::info("X-Plane UDP Client shutdown successful");
 }
 
-promise::Defer UDPClient::connect()
+cti::continuable<> UDPClient::connect()
 {
-    return promise::newPromise([](promise::Defer d) { d.resolve(); });
+    return cti::make_ready_continuable();
 }
 
 void xplaneudpcpp::UDPClient::writeDataref(const std::string& dataref, float f)

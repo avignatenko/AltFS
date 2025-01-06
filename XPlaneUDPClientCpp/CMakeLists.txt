@@ -38,5 +38,5 @@ target_sources(
 )
 target_link_libraries(
     ${PROJECT_NAME}_tests
-    PRIVATE Catch2::Catch2WithMain ${PROJECT_NAME}
+    PRIVATE Catch2::Catch2WithMain spdlog::spdlog ${PROJECT_NAME}
 )

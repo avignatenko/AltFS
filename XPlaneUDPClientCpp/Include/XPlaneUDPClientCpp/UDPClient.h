@@ -1,6 +1,6 @@
 #pragma once
 
-#include <promise-cpp/promise.hpp>
+#include <continuable/continuable.hpp>
 
 #include <asio.hpp>
 
@@ -18,10 +18,10 @@ class ClientSender;
 class UDPClient
 {
 public:
-    UDPClient(const std::string& address, int port, int16_t baseId);
+    UDPClient(asio::any_io_executor ex, const std::string& address, int port, int16_t baseId);
     ~UDPClient();
 
-    promise::Defer connect();
+    cti::continuable<> connect();
 
     void writeDataref(const std::string& dataref, float f);
 
