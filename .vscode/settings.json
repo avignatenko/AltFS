@@ -1,7 +1,0 @@
-{
-    "cmake.configureOnOpen": true,
-    "files.associations": {
-        "utility": "cpp",
-        "future": "cpp"
-    }
-}
