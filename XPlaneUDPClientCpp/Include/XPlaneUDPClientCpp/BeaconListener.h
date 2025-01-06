@@ -1,10 +1,7 @@
 #pragma once
 
-#include <promise-cpp/promise.hpp>
-
-#include <asio.hpp>
-#include <functional>
-#include <thread>
+#include <asio/any_io_executor.hpp>
+#include <continuable/continuable.hpp>
 
 namespace xplaneudpcpp
 {
@@ -20,16 +17,7 @@ public:
         int port = 0;
     };
 
-    BeaconListener();
-    ~BeaconListener();
-
-    /// Return ServerInfo as value
-    promise::Defer getXPlaneServerBroadcast();
-
-private:
-    asio::io_service io_service;
-
-    std::unique_ptr<std::thread> m_thread;
+    static cti::continuable<ServerInfo> getXPlaneServerBroadcast(asio::any_io_executor ex);
 };
 
 }  // namespace xplaneudpcpp

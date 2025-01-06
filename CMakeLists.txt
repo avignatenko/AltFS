@@ -31,6 +31,7 @@ enable_testing()
 find_package(asio)
 find_package(spdlog)
 find_package(sol2)
+find_package(continuable)
 
 # windows defaults
 add_definitions(-D_WIN32_WINNT=0x0A00)
