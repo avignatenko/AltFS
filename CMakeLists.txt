@@ -32,6 +32,7 @@ find_package(asio)
 find_package(spdlog)
 find_package(sol2)
 find_package(continuable)
+find_package(Catch2)
 
 # windows defaults
 if(WIN32)

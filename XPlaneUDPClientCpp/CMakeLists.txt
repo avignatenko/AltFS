@@ -29,3 +29,14 @@ target_link_libraries(
 target_include_directories(${PROJECT_NAME} PRIVATE PUBLIC Include)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE "Src/StdAfx.h")
+
+# add tests
+add_executable(${PROJECT_NAME}_tests)
+target_sources(
+    ${PROJECT_NAME}_tests
+    PRIVATE "Tests/UDPClientTests.cpp" "Tests/BeaconListenerTests.cpp"
+)
+target_link_libraries(
+    ${PROJECT_NAME}_tests
+    PRIVATE Catch2::Catch2WithMain ${PROJECT_NAME}
+)
