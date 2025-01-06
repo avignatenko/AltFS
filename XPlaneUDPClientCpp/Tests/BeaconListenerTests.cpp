@@ -8,8 +8,7 @@ TEST_CASE("Basic discovery test", "[BeaconListener]")
     asio::io_context io;
     auto work = asio::make_work_guard(io);
 
-    xplaneudpcpp::BeaconListener listener;
-    listener.getXPlaneServerBroadcast(io.get_executor())
+    xplaneudpcpp::BeaconListener::getXPlaneServerBroadcastAsync(io.get_executor())
         .then(
             [&work](xplaneudpcpp::BeaconListener::ServerInfo info)
             {

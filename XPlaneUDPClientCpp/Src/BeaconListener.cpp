@@ -31,7 +31,7 @@ public:
         spdlog::info("BeaconListener created");
     }
 
-    cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> startReceive()
+    cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> receiveAsync()
     {
         spdlog::info("BeaconListener listening started");
         return socket_
@@ -58,7 +58,7 @@ private:
 
     xplaneudpcpp::BeaconListener::ServerInfo handle_receive_from(size_t bytes_recvd)
     {
-        spdlog::info("Multicast data refeived");
+        spdlog::info("Multicast data received");
 
         bool found = false;
 
@@ -76,7 +76,7 @@ private:
             return serverInfo;
         }
 
-        return {};  // error?
+        throw std::runtime_error("Invalid data received");
     }
 
 private:
@@ -85,7 +85,7 @@ private:
     std::array<char, 1024> data_{};
 };
 
-cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> xplaneudpcpp::BeaconListener::getXPlaneServerBroadcast(
+cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> xplaneudpcpp::BeaconListener::getXPlaneServerBroadcastAsync(
     asio::any_io_executor ex)
 {
     const auto ownAddress = "0.0.0.0";
@@ -95,5 +95,5 @@ cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> xplaneudpcpp::BeaconL
     auto receiver = std::make_shared<Receiver>(ex, asio::ip::address::from_string(ownAddress),
                                                asio::ip::address::from_string(multicastAddress), multicastPort);
 
-    return receiver->startReceive();
+    return receiver->receiveAsync();
 }
