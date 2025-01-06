@@ -3,7 +3,11 @@
 #include "LuaModule.h"
 
 #include <memory>
-namespace xplaneudpcpp { class BeaconListener; class UDPClient;}
+namespace xplaneudpcpp
+{
+class BeaconListener;
+class UDPClient;
+}  // namespace xplaneudpcpp
 
 #define PM_MULTITHREAD
 #include <promise-cpp/promise.hpp>
@@ -11,7 +15,6 @@ namespace xplaneudpcpp { class BeaconListener; class UDPClient;}
 class LuaXPlane
 {
 public:
-
     LuaXPlane(LuaModuleAPI& api);
     ~LuaXPlane();
 
@@ -23,7 +26,6 @@ public:
     bool isConnected() const { return xplaneClient_ != nullptr; }
 
 private:
-
     // x-plane
     std::unique_ptr<xplaneudpcpp::BeaconListener> xplaneDiscoverer_;
     std::unique_ptr<xplaneudpcpp::UDPClient> xplaneClient_;

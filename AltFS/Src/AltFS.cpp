@@ -94,7 +94,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     std::filesystem::path exeName = static_cast<LPCSTR>(path);
     std::filesystem::path exePath = exeName.parent_path();
 
-     // init logging
+    // init logging
 
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(spdlog::level::info);

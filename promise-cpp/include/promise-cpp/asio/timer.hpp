@@ -10,10 +10,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -34,58 +34,66 @@
 //   Defer yield(asio::io_service &io);
 //   Defer delay(asio::io_service &io, uint64_t time_ms);
 //   void cancelDelay(Defer d);
-// 
+//
 //   Defer setTimeout(asio::io_service &io,
 //                    const std::function<void(bool /*cancelled*/)> &func,
 //                    uint64_t time_ms);
 //   void clearTimeout(Defer d);
 //
 
-#include "../promise.hpp"
-#include <chrono>
 #include <asio.hpp>
 #include <asio/steady_timer.hpp>
+#include <chrono>
+#include "../promise.hpp"
 
-namespace promise {
+namespace promise
+{
 
-inline Defer yield(asio::io_service &io){
-    auto defer = newPromise([&io](Defer d) {
+inline Defer yield(asio::io_service& io)
+{
+    auto defer = newPromise(
+        [&io](Defer d)
+        {
 #if BOOST_VERSION >= 106600
-        asio::defer(io, [d]() {
-            d.resolve();
-        });
+            asio::defer(io, [d]() { d.resolve(); });
 #else
-        io.post([d]() {
-            d.resolve();
-        });
+            io.post([d]() { d.resolve(); });
 #endif
-    });
+        });
 
-    //pm_assert(defer->next_.operator->() == nullptr);
+    // pm_assert(defer->next_.operator->() == nullptr);
     return defer;
 }
 
-inline Defer delay(asio::io_service &io, uint64_t time_ms) {
-    return newPromise([time_ms, &io](Defer &d) {
-        asio::steady_timer *timer =
-            pm_new<asio::steady_timer>(io, std::chrono::milliseconds(time_ms));
-        d->any_ = timer;
-        timer->async_wait([d](const std::error_code &error_code) {
-            if (!d->any_.empty()) {
-                asio::steady_timer *timer = any_cast<asio::steady_timer *>(d->any_);
-                d->any_.clear();
-                pm_delete(timer);
-                d.resolve();
-            }
+inline Defer delay(asio::io_service& io, uint64_t time_ms)
+{
+    return newPromise(
+        [time_ms, &io](Defer& d)
+        {
+            asio::steady_timer* timer = pm_new<asio::steady_timer>(io, std::chrono::milliseconds(time_ms));
+            d->any_ = timer;
+            timer->async_wait(
+                [d](const std::error_code& error_code)
+                {
+                    if (!d->any_.empty())
+                    {
+                        asio::steady_timer* timer = any_cast<asio::steady_timer*>(d->any_);
+                        d->any_.clear();
+                        pm_delete(timer);
+                        d.resolve();
+                    }
+                });
         });
-    });
 }
 
-inline void cancelDelay(Defer d) {
+inline void cancelDelay(Defer d)
+{
     d = d.find_pending();
-    if (d.operator->()) {
-        if (!d->any_.empty()) {
-            asio::steady_timer *timer = any_cast<asio::steady_timer *>(d->any_);
+    if (d.operator->())
+    {
+        if (!d->any_.empty())
+        {
+            asio::steady_timer* timer = any_cast<asio::steady_timer*>(d->any_);
             d->any_.clear();
             timer->cancel();
             pm_delete(timer);
@@ -94,47 +102,50 @@ inline void cancelDelay(Defer d) {
     }
 }
 
-inline Defer setTimeout(asio::io_service &io,
-                 const std::function<void(bool)> &func,
-                 uint64_t time_ms) {
-    return delay(io, time_ms).then([func]() {
-        func(false);
-    }, [func]() {
-        func(true);
-    });
+inline Defer setTimeout(asio::io_service& io, const std::function<void(bool)>& func, uint64_t time_ms)
+{
+    return delay(io, time_ms).then([func]() { func(false); }, [func]() { func(true); });
 }
 
-inline void clearTimeout(Defer d) {
+inline void clearTimeout(Defer d)
+{
     cancelDelay(d);
 }
 
-inline Defer wait(asio::io_service &io, Defer d, uint64_t time_ms) {
-    return newPromise([&io, d, time_ms](Defer &dTimer) {
-        asio::steady_timer *timer =
-            pm_new<asio::steady_timer>(io, std::chrono::milliseconds(time_ms));
-        dTimer->any_ = timer;
+inline Defer wait(asio::io_service& io, Defer d, uint64_t time_ms)
+{
+    return newPromise(
+        [&io, d, time_ms](Defer& dTimer)
+        {
+            asio::steady_timer* timer = pm_new<asio::steady_timer>(io, std::chrono::milliseconds(time_ms));
+            dTimer->any_ = timer;
 
-        d.finally([=](){
-            if (!dTimer->any_.empty()) {
-                asio::steady_timer *timer = any_cast<asio::steady_timer *>(dTimer->any_);
-                dTimer->any_.clear();
-                timer->cancel();
-                pm_delete(timer);
-            }
-        }).call(dTimer);
-        
-        timer->async_wait([=](const std::error_code& error_code) {
-            if (!dTimer->any_.empty()) {
-                asio::steady_timer *timer = any_cast<asio::steady_timer *>(dTimer->any_);
-                dTimer->any_.clear();
-                pm_delete(timer);
-                d.reject(std::make_error_code(std::errc::timed_out));
-            }
+            d.finally(
+                 [=]()
+                 {
+                     if (!dTimer->any_.empty())
+                     {
+                         asio::steady_timer* timer = any_cast<asio::steady_timer*>(dTimer->any_);
+                         dTimer->any_.clear();
+                         timer->cancel();
+                         pm_delete(timer);
+                     }
+                 })
+                .call(dTimer);
+
+            timer->async_wait(
+                [=](const std::error_code& error_code)
+                {
+                    if (!dTimer->any_.empty())
+                    {
+                        asio::steady_timer* timer = any_cast<asio::steady_timer*>(dTimer->any_);
+                        dTimer->any_.clear();
+                        pm_delete(timer);
+                        d.reject(std::make_error_code(std::errc::timed_out));
+                    }
+                });
         });
-    });
 }
 
-
-
-}
+}  // namespace promise
 #endif

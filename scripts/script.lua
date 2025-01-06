@@ -11,44 +11,44 @@ local sim_paused = xplane.dataref:new("sim/time/paused", xplane.types.int, freq.
 local ap_master = xplane.dataref:new("sim/cockpit/autopilot/autopilot_mode", xplane.types.int, freq.low) -- fixme, cockpit2?
 local altitude_hold_status = xplane.dataref:new("sim/cockpit2/autopilot/altitude_hold_status", xplane.types.int, freq.verylow)
 local elevator_trim = xplane.dataref:new("sim/flightmodel2/controls/elevator_trim", xplane.types.float, freq.high)
-local aileron_trim =  xplane.dataref:new("sim/flightmodel2/position/aileron_trim", xplane.types.float, freq.high) 
-local rudder_trim =  xplane.dataref:new("sim/flightmodel2/position/rudder_trim", xplane.types.float, freq.high) 
+local aileron_trim =  xplane.dataref:new("sim/flightmodel2/position/aileron_trim", xplane.types.float, freq.high)
+local rudder_trim =  xplane.dataref:new("sim/flightmodel2/position/rudder_trim", xplane.types.float, freq.high)
 local local_time_sec = xplane.dataref:new("sim/time/local_time_sec", xplane.types.float, freq.high)
 local ground_speed = xplane.dataref:new("sim/flightmodel/position/groundspeed", xplane.types.float, freq.low) --fixme, flightmodel2?
 local vertical_speed = xplane.dataref:new("sim/flightmodel/position/vh_ind_fpm2", xplane.types.float, freq.low) --fixme, flightmodel2?
 local elevation = xplane.dataref:new("sim/flightmodel/position/elevation", xplane.types.float, freq.low) --fixme, flightmodel2?
 local theta = xplane.dataref:new("sim/flightmodel/position/theta", xplane.types.float, freq.low) --fixme, flightmodel2?
-local local_time_minutes = xplane.dataref:new("sim/cockpit2/clock_timer/local_time_minutes", xplane.types.int, freq.verylow) 
-local local_time_seconds = xplane.dataref:new("sim/cockpit2/clock_timer/local_time_seconds", xplane.types.int, freq.verylow) 
-local cgz_ref_to_default = xplane.dataref:new("sim/flightmodel/misc/cgz_ref_to_default", xplane.types.float, freq.verylow) 
-local acf_stall_warn_alpha = xplane.dataref:new("sim/aircraft/overflow/acf_stall_warn_alpha", xplane.types.float, freq.once) 
-local dvinc_0 = xplane.dataref:new("sim/flightmodel2/engines/jetwash_mtr_sec[0]", xplane.types.float, freq.medium) 
-local gearF1 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium) 
-local gearF2 = xplane.dataref:new("sim/flightmodel/forces/fnrml_gear", xplane.types.float, freq.medium) 
-local gearF3 = xplane.dataref:new("sim/flightmodel/forces/faxil_gear", xplane.types.float, freq.medium) 
-local fuel_flow_1 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[0]", xplane.types.float, freq.low) 
-local fuel_flow_2 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[1]", xplane.types.float, freq.low) 
-local eng1_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[0]", xplane.types.float, freq.low) 
-local eng2_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[1]", xplane.types.float, freq.low) 
-local true_airspeed = xplane.dataref:new("sim/flightmodel/position/true_airspeed", xplane.types.float, freq.low) 
-local point_thrust = xplane.dataref:new("sim/flightmodel/engine/POINT_thrust[0]", xplane.types.float, freq.low) 
-local stall_warning = xplane.dataref:new("sim/cockpit2/annunciators/stall_warning", xplane.types.int, freq.low) 
-local alpha = xplane.dataref:new("sim/flightmodel/position/alpha", xplane.types.float, freq.high) 
-local beta = xplane.dataref:new("sim/flightmodel/position/beta", xplane.types.float, freq.high) 
-local crashed = xplane.dataref:new("sim/flightmodel2/misc/has_crashed", xplane.types.int, freq.low) 
+local local_time_minutes = xplane.dataref:new("sim/cockpit2/clock_timer/local_time_minutes", xplane.types.int, freq.verylow)
+local local_time_seconds = xplane.dataref:new("sim/cockpit2/clock_timer/local_time_seconds", xplane.types.int, freq.verylow)
+local cgz_ref_to_default = xplane.dataref:new("sim/flightmodel/misc/cgz_ref_to_default", xplane.types.float, freq.verylow)
+local acf_stall_warn_alpha = xplane.dataref:new("sim/aircraft/overflow/acf_stall_warn_alpha", xplane.types.float, freq.once)
+local dvinc_0 = xplane.dataref:new("sim/flightmodel2/engines/jetwash_mtr_sec[0]", xplane.types.float, freq.medium)
+local gearF1 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium)
+local gearF2 = xplane.dataref:new("sim/flightmodel/forces/fnrml_gear", xplane.types.float, freq.medium)
+local gearF3 = xplane.dataref:new("sim/flightmodel/forces/faxil_gear", xplane.types.float, freq.medium)
+local fuel_flow_1 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[0]", xplane.types.float, freq.low)
+local fuel_flow_2 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[1]", xplane.types.float, freq.low)
+local eng1_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[0]", xplane.types.float, freq.low)
+local eng2_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[1]", xplane.types.float, freq.low)
+local true_airspeed = xplane.dataref:new("sim/flightmodel/position/true_airspeed", xplane.types.float, freq.low)
+local point_thrust = xplane.dataref:new("sim/flightmodel/engine/POINT_thrust[0]", xplane.types.float, freq.low)
+local stall_warning = xplane.dataref:new("sim/cockpit2/annunciators/stall_warning", xplane.types.int, freq.low)
+local alpha = xplane.dataref:new("sim/flightmodel/position/alpha", xplane.types.float, freq.high)
+local beta = xplane.dataref:new("sim/flightmodel/position/beta", xplane.types.float, freq.high)
+local crashed = xplane.dataref:new("sim/flightmodel2/misc/has_crashed", xplane.types.int, freq.low)
 local aoa_degrees = xplane.dataref:new("sim/flightmodel2/misc/AoA_angle_degrees", xplane.types.float, freq.high) -- Positive means aircracft nose is above the flight path in aircraft coordinates.
-local gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio", xplane.types.float, freq.medium) 
-local hydraulic_pressure_low = xplane.dataref:new("sim/cockpit2/annunciators/hydraulic_pressure", xplane.types.int, freq.verylow) 
-local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.high) 
-local g_side = xplane.dataref:new("sim/flightmodel/forces/g_side", xplane.types.float, freq.high) 
-local Qrad = xplane.dataref:new("sim/flightmodel/position/Qrad", xplane.types.float, freq.medium) 
-local P_dot = xplane.dataref:new("sim/flightmodel/position/P_dot", xplane.types.float, freq.high) 
-local engine_rpm_0 = xplane.dataref:new("sim/cockpit2/engine/indicators/engine_speed_rpm[0]", xplane.types.float, freq.medium) 
-local lail1def = xplane.dataref:new("sim/flightmodel/controls/lail1def", xplane.types.float, freq.high) 
-local rho = xplane.dataref:new("sim/weather/rho", xplane.types.float, freq.verylow) 
-local barometer_current_inhg = xplane.dataref:new("sim/weather/barometer_current_inhg", xplane.types.float, freq.verylow) 
-local surface_texture_type = xplane.dataref:new("sim/flightmodel/ground/surface_texture_type", xplane.types.int, freq.verylow) 
-local turbulence_percent = xplane.dataref:new("sim/weather/wind_turbulence_percent", xplane.types.int, freq.verylow) 
+local gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio", xplane.types.float, freq.medium)
+local hydraulic_pressure_low = xplane.dataref:new("sim/cockpit2/annunciators/hydraulic_pressure", xplane.types.int, freq.verylow)
+local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.high)
+local g_side = xplane.dataref:new("sim/flightmodel/forces/g_side", xplane.types.float, freq.high)
+local Qrad = xplane.dataref:new("sim/flightmodel/position/Qrad", xplane.types.float, freq.medium)
+local P_dot = xplane.dataref:new("sim/flightmodel/position/P_dot", xplane.types.float, freq.high)
+local engine_rpm_0 = xplane.dataref:new("sim/cockpit2/engine/indicators/engine_speed_rpm[0]", xplane.types.float, freq.medium)
+local lail1def = xplane.dataref:new("sim/flightmodel/controls/lail1def", xplane.types.float, freq.high)
+local rho = xplane.dataref:new("sim/weather/rho", xplane.types.float, freq.verylow)
+local barometer_current_inhg = xplane.dataref:new("sim/weather/barometer_current_inhg", xplane.types.float, freq.verylow)
+local surface_texture_type = xplane.dataref:new("sim/flightmodel/ground/surface_texture_type", xplane.types.int, freq.verylow)
+local turbulence_percent = xplane.dataref:new("sim/weather/wind_turbulence_percent", xplane.types.int, freq.verylow)
 
 local readonly = function(value) log(loglevel.err, "error: can't write into readonly var") end
 
@@ -69,7 +69,7 @@ offsets=
 -- CG percent, as a double (FLOAT64). This is the position of the actual CoG as a fraction (%/100) of MAC (Mean Aerodynamic Chord).
 [0x2ef8] = { fsuipc_types.float64, function() return 0 end, readonly },
 
--- Custom BFF Offset 
+-- Custom BFF Offset
 
 [0x66C0] = { fsuipc_types.uint8, function() return ap_master:read() == 2 and 1 or 0 end, readonly },
 [0x66C1] = { fsuipc_types.uint8, function() return 0 end, readonly }, -- always off now now
@@ -112,7 +112,7 @@ offsets=
 --G Force: units unknown, but /624 seems to give quite sensible values. See also offset 1140
 [0x11ba] = { fsuipc_types.sint16, function() return g_nrml:read() * 625 end, readonly },
 -- Angle of Attack Indicator angle, with 360 degrees = 65536. The value 32767 is 180 degrees Angle of Attack. The angle is expressed in the usual FS 16-bit angle units (360 degrees = 65536), with 180 degrees pointing to the 0.0 position (right and down about 35 degrees in a Boeing type AofA indicator). Note that the indicator angle actually decreases as the wing AofA increases.
-[0x11be] = { fsuipc_types.uint16, function() 
+[0x11be] = { fsuipc_types.uint16, function()
    local aoa = aoa_degrees:read()
    if aoa < 0 then return 16384 end
    return (1 + aoa / acf_stall_warn_alpha:read()) / 2 * 65535 / 2 end, readonly },
@@ -124,7 +124,7 @@ offsets=
 [0x2ed0] = { fsuipc_types.float64, function() return alpha:read() * 0.0174533 end, readonly },
 -- Incidence “beta”, in radians, as a double (FLOAT64). This is the side slip angle.
 [0x2ed8] = { fsuipc_types.float64, function() return beta:read() * 0.0174533 end, readonly },
--- TAS: True Air Speed, as knots * 128	
+-- TAS: True Air Speed, as knots * 128
 [0x02b8] = { fsuipc_types.uint32, function() return true_airspeed:read() *  1.943844 * 128 end, readonly },
 -- Vertical speed, signed, as 256 * metres/sec. For the more usual ft/min you need to apply the conversion *60*3.28084/256
 [0x02c8] = { fsuipc_types.uint32, function() return vertical_speed:read() *  256 / 60 / 3.28084 end, readonly },
@@ -133,7 +133,7 @@ offsets=
 -- Second of time in FS (0–59)
 [0x023a] = { fsuipc_types.uint8, function() return local_time_seconds:read() end, readonly },
 -- GS: Ground Speed, as 65536*metres/sec. Not updated in Slew mode!
-[0x02b4] = { fsuipc_types.uint32, function() return ground_speed:read() * 65536 end, readonly },	
+[0x02b4] = { fsuipc_types.uint32, function() return ground_speed:read() * 65536 end, readonly },
 -- Pause indicator (0=Not paused, 1=Paused)
 [0x0264]={ fsuipc_types.uint16, function() return sim_paused:read() > 0 and 1 or 0 end, readonly},
 -- Pitch
@@ -154,10 +154,10 @@ offsets=
 [0x0840]={ fsuipc_types.sint16, function() return crashed:read() end,  readonly},
 -- Elevator trim control input: –16383 to +16383
 [0x0bc0]={ fsuipc_types.sint16,  function() return elevator_trim:read() * 16383 end, function(value)  elevator_trim:write(value / 16383 ) end },
--- Ready to Fly indicator. This is non-zero when FS is loading, or reloading a flight or aircraft or scenery, and 
+-- Ready to Fly indicator. This is non-zero when FS is loading, or reloading a flight or aircraft or scenery, and
 -- becomes zero when flight mode is enabled (even if the simulator is paused or in Slew mode).
 [0x3364]={ fsuipc_types.uint8, function() return sim_paused:read() and 0 or 1 end, readonly},
--- In Menu or Dialog flag. 
+-- In Menu or Dialog flag.
 [0x3365]={ fsuipc_types.uint8, function() return sim_paused:read() end, readonly},
 -- Propeller 1 thrust in pounds, as a double (FLOAT64). This is for props and turboprops.
 --# FSUIPC offset - 0x2410 Engine 1 thrust in Pounds (comes in as Newtons)
@@ -174,7 +174,7 @@ offsets=
 [0x28C0] = { fsuipc_types.float64, function() return rho:read() / 515.379 end, readonly },
 -- Ambient air pressure, in lbs per square foot, double floating point
 [0x28C8] = { fsuipc_types.float64, function() return barometer_current_inhg:read()  * 70.726 end, readonly },
--- Pressure Altitude (metres), double float. 
+-- Pressure Altitude (metres), double float.
 -- FIXME!! : true altitude convert to pressure
 [0x34B0] = { fsuipc_types.float64, function() return elevation:read() end, readonly },
 -- Simulation rate *256 (i.e. 256=1x)
@@ -195,12 +195,12 @@ offsets=
 --surf_shoulder        9,
 --surf_blastpad        10,
 --surf_grnd        11,
---surf_object        12 
+--surf_object        12
 -- fixme: add surface handling
 
 [0x31E8] = { fsuipc_types.uint32, function()
 
-        local xplane2fsx_ground = { [4] = 1, [5] = 1, [6] = 1, [8] = 1, 
+        local xplane2fsx_ground = { [4] = 1, [5] = 1, [6] = 1, [8] = 1,
                                     [11] = 2, [1] = 2, [7] = 2 }
         local surface =  surface_texture_type:read()
         local fsx_surface = xplane2fsx_ground[surface]

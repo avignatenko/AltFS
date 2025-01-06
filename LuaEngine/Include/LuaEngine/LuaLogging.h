@@ -8,14 +8,11 @@
 class LuaLogging
 {
 public:
-
     LuaLogging(LuaModuleAPI& api);
     ~LuaLogging();
 
     promise::Defer init();
 
 private:
-
     LuaModuleAPI& api_;
-
 };

@@ -1,32 +1,25 @@
-#include "stdafx.h"
 #include "../Include/LuaEngine/OffsetStatsGenerator.h"
+#include "stdafx.h"
 
 #include <spdlog/spdlog.h>
 
-#include <ostream>
 #include <fstream>
+#include <ostream>
 
 void OffsetStatsGenerator::saveFile()
 {
-  std::ofstream stream(m_path);
-  stream << "offset;size;writes;reads" << std::endl;
-  for(auto& elem: m_offsets)
-  {
-     stream << 
-         std::hex << elem.first.offset << std::dec << ";" << 
-         elem.first.size << ";" << 
-         elem.second.writes << ";" << 
-         elem.second.reads << ";" << 
-         std::endl;
-  }
+    std::ofstream stream(m_path);
+    stream << "offset;size;writes;reads" << std::endl;
+    for (auto& elem : m_offsets)
+    {
+        stream << std::hex << elem.first.offset << std::dec << ";" << elem.first.size << ";" << elem.second.writes
+               << ";" << elem.second.reads << ";" << std::endl;
+    }
 
-  stream.close();
+    stream.close();
 }
 
-
-OffsetStatsGenerator::OffsetStatsGenerator(const std::filesystem::path& filename): m_path(filename)
-{
-}
+OffsetStatsGenerator::OffsetStatsGenerator(const std::filesystem::path& filename) : m_path(filename) {}
 
 OffsetStatsGenerator::~OffsetStatsGenerator()
 {
@@ -41,5 +34,4 @@ void OffsetStatsGenerator::reportUnknownOffset(int offset, int size, bool isWrit
         ++elem.writes;
     else
         ++elem.reads;
-
 }

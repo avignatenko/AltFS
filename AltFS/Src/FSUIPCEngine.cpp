@@ -62,9 +62,8 @@ promise::Defer FSUIPCEngine::init()
     int16_t startId = currentProcessId % 0xFFFF;
 
     return m_xPlaneModule.discover()
-        .then([this, startId](xplaneudpcpp::BeaconListener::ServerInfo& info) {
-            return m_xPlaneModule.connect(info.host, info.port, startId);
-        })
+        .then([this, startId](xplaneudpcpp::BeaconListener::ServerInfo& info)
+              { return m_xPlaneModule.connect(info.host, info.port, startId); })
         .then([&] { return m_logModule.init(); })
         .then([&] { return m_xPlaneModule.init(); })
         .then([&] { return m_lua.load(); });
@@ -158,9 +157,11 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
 
 promise::Defer FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
 {
-    return promise::newPromise([&](promise::Defer& d) {
-        spdlog::debug("Write request, offset {0:#x}, size {1}", offset, size);
+    return promise::newPromise(
+        [&](promise::Defer& d)
+        {
+            spdlog::debug("Write request, offset {0:#x}, size {1}", offset, size);
 
-        m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
-    });
+            m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
+        });
 }

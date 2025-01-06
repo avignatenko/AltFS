@@ -6,8 +6,6 @@
 class OffsetStatsGenerator
 {
 public:
-
-
     OffsetStatsGenerator(const std::filesystem::path& filename);
     ~OffsetStatsGenerator();
 
@@ -15,10 +13,7 @@ public:
 
     void saveFile();
 
-
-
 private:
-
     struct Offset
     {
         int offset;
@@ -26,8 +21,7 @@ private:
 
         bool operator<(const Offset& other) const
         {
-            if (offset != other.offset) 
-                return (offset < other.offset);
+            if (offset != other.offset) return (offset < other.offset);
             return size < other.size;
         }
     };
@@ -40,6 +34,4 @@ private:
 
     std::map<Offset, OffsetStatistics> m_offsets;
     std::filesystem::path m_path;
-
 };
-

@@ -1,6 +1,9 @@
 #pragma once
 
-namespace sol { class state;}
+namespace sol
+{
+class state;
+}
 
 #include <functional>
 class Runner;

@@ -42,7 +42,7 @@
 ## What is promise-cpp ?
 
 Promise-cpp is **header only** library that implements promise/A+ standard.
-  
+
 Promise-cpp is easy to use, just #include "promise.hpp" is enough. With promise-cpp, you can resolve or reject any type of data without writing complex template code.
 
 Promise-cpp is designed to built by c++11 compilers and almost no dependencies. Although some of the examples are linked against boost library, promise-cpp itself is absolutely **workable without boost library** and can be used together with other asynchronized libraries.
@@ -51,7 +51,7 @@ Promise-cpp can be the base component in event-looped asychronized programming, 
 
 ## Examples
 
-### Examples list 
+### Examples list
 
 * [test/test0.cpp](test/test0.cpp): a simple test code for promise resolve/reject operations. (no dependencies)
 
@@ -81,7 +81,7 @@ The library has passed test on these compilers --
 
 ### Build tips
 
-Some of the [examples](test) use boost::asio as io service, and use boost::beast as http service. 
+Some of the [examples](test) use boost::asio as io service, and use boost::beast as http service.
 You need to install [boost_1_66](https://www.boost.org/doc/libs/1_66_0/more/getting_started/index.html)
  or higher to build the examples.
 
@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
 
 ### Defer newPromise(FUNC func);
 Creates a new Defer object with a user-defined function.
-The user-defined functions, used as parameters by newPromise, must have a parameter Defer d. 
+The user-defined functions, used as parameters by newPromise, must have a parameter Defer d.
 for example --
 
 ```cpp
@@ -308,16 +308,16 @@ race(promise_list).then([](){
 
 ### Defer doWhile(FUNC func);
 "While loop" for promisied task.
-A promise(Defer) object will passed as parameter when call func, which can be resolved to continue with the "while loop", or be rejected to break from the "while loop". 
+A promise(Defer) object will passed as parameter when call func, which can be resolved to continue with the "while loop", or be rejected to break from the "while loop".
 
 for example --
 
 ```cpp
 doWhile([](Defer d){
     // Add code here for your task in "while loop"
-    
+
     // Call "d.resolve();" to continue with the "while loop",
-    
+
     // or call "d.reject();" to break from the "while loop", in this case,
     // the returned promise object will be in rejected status.
 });
@@ -355,7 +355,7 @@ return newPromise([](Defer d){
 ```
 
 ### Defer::then(FUNC_ON_RESOLVED on_resolved, FUNC_ON_REJECTED on_rejected)
-Return the chaining promise object, where on_resolved is the function to be called when 
+Return the chaining promise object, where on_resolved is the function to be called when
 previous promise object calls function resolve, on_rejected is the function to be called
 when previous promise object calls function reject.
 for example --
@@ -370,13 +370,13 @@ return newPromise([](Defer d){
     },
 
     /* function on_rejected */ [](){
-        printf("promise rejected\n"); //will not run to here in this code 
+        printf("promise rejected\n"); //will not run to here in this code
     }
 );
 ```
 
 ### Defer::then(FUNC_ON_RESOLVED on_resolved)
-Return the chaining promise object, where on_resolved is the function to be called when 
+Return the chaining promise object, where on_resolved is the function to be called when
 previous promise object calls function resolve.
 for example --
 
@@ -392,7 +392,7 @@ return newPromise([](Defer d){
 Return the chaining promise object, where on_rejected is the function to be called when
 previous promise object calls function reject.
 
-This function is usually named "catch" in most implements of Promise library. 
+This function is usually named "catch" in most implements of Promise library.
   https://www.promisejs.org/api/
 
 In promise_cpp, function name "fail" is used instead of "catch", since "catch" is a keyword of c++.
@@ -443,7 +443,7 @@ return newPromise([](Defer d){
 ## And more ...
 
 ### about exceptions
-To throw any object in the callback functions above, including on_resolved, on_rejected, on_always, 
+To throw any object in the callback functions above, including on_resolved, on_rejected, on_always,
 will same as d.reject(the_throwed_object) and returns immediately.
 for example --
 
