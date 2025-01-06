@@ -199,7 +199,7 @@ private:
 #endif
             ++header->ref_count_;
 
-            // Check if ref_count_ must overflow£¡
+            // Check if ref_count_ must overflowï¿½ï¿½
             if (header->ref_count_ <= 0)
             {
                 pm_throw("ref_count_ overflow");

@@ -48,7 +48,7 @@ private:
         int32_t version_number;        // 104103 for X-Plane 10.41r3
         uint32_t role;                 // 1 for master, 2 for extern visual, 3 for IOS
         uint16_t port;                 // port number X-Plane is listening on, 49000 by default
-        char computer_name[500];       // the hostname of the computer, e.g. “Joe’s Macbook”
+        char computer_name[500];       // the hostname of the computer, e.g. ï¿½Joeï¿½s Macbookï¿½
     };
 
 #pragma pack(pop, r1)

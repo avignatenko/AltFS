@@ -141,7 +141,7 @@ promise::Defer LuaEngine::readFromSim(uint32_t offset, uint32_t size, std::byte*
                         }
                         default:
                             // fixme, where is better place?
-                            spdlog::error("Invalid datatype on read {}/{}: {}", offset, size, type);
+                            spdlog::error("Invalid datatype on read {}/{}: {}", offset, size, static_cast<int>(type));
                             retval.set_value({false, "Invalid datatype"});
                             return;
                         }

@@ -63,13 +63,15 @@
 #include <vector>
 #endif
 
+// clang-format off
+#include "promise/std_addon.hpp"
+#include "promise/misc.hpp"
+#include "promise/debug.hpp"
+#include "promise/stack.hpp"
+#include "promise/list.hpp"
 #include "promise/allocator.hpp"
 #include "promise/any.hpp"
-#include "promise/debug.hpp"
-#include "promise/list.hpp"
-#include "promise/misc.hpp"
-#include "promise/stack.hpp"
-#include "promise/std_addon.hpp"
+// clang-format on
 
 namespace promise
 {
