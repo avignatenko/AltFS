@@ -18,7 +18,7 @@ target_sources(${PROJECT_NAME} PRIVATE
         "Src/ActiveObject.cpp")
 
 
-  target_link_libraries(${PROJECT_NAME} PUBLIC promise-cpp CONAN_PKG::asio PRIVATE CONAN_PKG::spdlog )
+  target_link_libraries(${PROJECT_NAME} PUBLIC promise-cpp asio::asio PRIVATE spdlog::spdlog )
 
   target_include_directories(${PROJECT_NAME} PRIVATE PUBLIC Include)
 
