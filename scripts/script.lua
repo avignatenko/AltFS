@@ -22,14 +22,18 @@ local local_time_minutes = xplane.dataref:new("sim/cockpit2/clock_timer/local_ti
 local local_time_seconds = xplane.dataref:new("sim/cockpit2/clock_timer/local_time_seconds", xplane.types.int, freq.verylow)
 local cgz_ref_to_default = xplane.dataref:new("sim/flightmodel/misc/cgz_ref_to_default", xplane.types.float, freq.verylow)
 local acf_stall_warn_alpha = xplane.dataref:new("sim/aircraft/overflow/acf_stall_warn_alpha", xplane.types.float, freq.once)
-local dvinc_0 = xplane.dataref:new("sim/flightmodel2/engines/jetwash_mtr_sec[0]", xplane.types.float, freq.medium)
+local dvinc_0 = xplane.dataref:new("sim/flightmodel2/engines/propwash_mtr_sec[0]", xplane.types.float, freq.medium)
 local gearF1 = xplane.dataref:new("sim/flightmodel/forces/fside_gear", xplane.types.float, freq.medium)
 local gearF2 = xplane.dataref:new("sim/flightmodel/forces/fnrml_gear", xplane.types.float, freq.medium)
 local gearF3 = xplane.dataref:new("sim/flightmodel/forces/faxil_gear", xplane.types.float, freq.medium)
 local fuel_flow_1 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[0]", xplane.types.float, freq.low)
 local fuel_flow_2 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[1]", xplane.types.float, freq.low)
+local fuel_flow_3 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[2]", xplane.types.float, freq.low)
+local fuel_flow_4 = xplane.dataref:new("sim/flightmodel/engine/ENGN_FF_[3]", xplane.types.float, freq.low)
 local eng1_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[0]", xplane.types.float, freq.low)
 local eng2_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[1]", xplane.types.float, freq.low)
+local eng3_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[2]", xplane.types.float, freq.low)
+local eng4_running = xplane.dataref:new("sim/flightmodel/engine/ENGN_running[3]", xplane.types.float, freq.low)
 local true_airspeed = xplane.dataref:new("sim/flightmodel/position/true_airspeed", xplane.types.float, freq.low)
 local point_thrust = xplane.dataref:new("sim/flightmodel/engine/POINT_thrust[0]", xplane.types.float, freq.low)
 local stall_warning = xplane.dataref:new("sim/cockpit2/annunciators/stall_warning", xplane.types.int, freq.low)
@@ -37,18 +41,28 @@ local alpha = xplane.dataref:new("sim/flightmodel/position/alpha", xplane.types.
 local beta = xplane.dataref:new("sim/flightmodel/position/beta", xplane.types.float, freq.high)
 local crashed = xplane.dataref:new("sim/flightmodel2/misc/has_crashed", xplane.types.int, freq.low)
 local aoa_degrees = xplane.dataref:new("sim/flightmodel2/misc/AoA_angle_degrees", xplane.types.float, freq.high) -- Positive means aircracft nose is above the flight path in aircraft coordinates.
-local gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio", xplane.types.float, freq.medium)
+local nose_gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio[0]", xplane.types.float, freq.medium)
+local right_gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio[1]", xplane.types.float, freq.medium)
+local left_gear_deploy_ratio = xplane.dataref:new("sim/flightmodel2/gear/deploy_ratio[2]", xplane.types.float, freq.medium)
 local hydraulic_pressure_low = xplane.dataref:new("sim/cockpit2/annunciators/hydraulic_pressure", xplane.types.int, freq.verylow)
 local g_nrml = xplane.dataref:new("sim/flightmodel/forces/g_nrml", xplane.types.float, freq.high)
 local g_side = xplane.dataref:new("sim/flightmodel/forces/g_side", xplane.types.float, freq.high)
+local g_forw = xplane.dataref:new("sim/flightmodel/forces/g_axil", xplane.types.float, freq.high)
 local Qrad = xplane.dataref:new("sim/flightmodel/position/Qrad", xplane.types.float, freq.medium)
 local P_dot = xplane.dataref:new("sim/flightmodel/position/P_dot", xplane.types.float, freq.high)
 local engine_rpm_0 = xplane.dataref:new("sim/cockpit2/engine/indicators/engine_speed_rpm[0]", xplane.types.float, freq.medium)
+local engine_rpm_1 = xplane.dataref:new("sim/cockpit2/engine/indicators/engine_speed_rpm[1]", xplane.types.float, freq.medium)
+local engine_rpm_2 = xplane.dataref:new("sim/cockpit2/engine/indicators/engine_speed_rpm[2]", xplane.types.float, freq.medium)
+local engine_rpm_3 = xplane.dataref:new("sim/cockpit2/engine/indicators/engine_speed_rpm[3]", xplane.types.float, freq.medium)
 local lail1def = xplane.dataref:new("sim/flightmodel/controls/lail1def", xplane.types.float, freq.high)
+local ail1def_dn_max = xplane.dataref:new("sim/aircraft/controls/acf_ail1_dn", xplane.types.float, freq.verylow)
 local rho = xplane.dataref:new("sim/weather/rho", xplane.types.float, freq.verylow)
 local barometer_current_inhg = xplane.dataref:new("sim/weather/barometer_current_inhg", xplane.types.float, freq.verylow)
 local surface_texture_type = xplane.dataref:new("sim/flightmodel/ground/surface_texture_type", xplane.types.int, freq.verylow)
 local turbulence_percent = xplane.dataref:new("sim/weather/wind_turbulence_percent", xplane.types.int, freq.verylow)
+local flapss_left_deployment_degrees = xplane.dataref:new("sim/flightmodel2/wing/flap1_deg[0]", xplane.types.float, freq.low)
+local flaps_right_deployment_degrees = xplane.dataref:new("sim/flightmodel2/wing/flap1_deg[1]", xplane.types.float, freq.low)
+local flaps_deployment_ratio = xplane.dataref:new("sim/flightmodel2/controls/flap1_deploy_ratio", xplane.types.float, freq.low)
 
 local readonly = function(value) log(loglevel.err, "error: can't write into readonly var") end
 
@@ -100,15 +114,27 @@ offsets=
 [0x0918] = { fsuipc_types.float64, function() return eng1_running:read() * fuel_flow_1:read() * 7936.64 end, readonly },
 -- Engine 2 Fuel Flow Pounds per Hour, as floating point double (FLOAT64)
 [0x09b0] = { fsuipc_types.float64, function() return eng2_running:read() * fuel_flow_2:read() * 7936.64 end, readonly },
--- Aileron trim value/control: –16383 to +16383
+-- Engine 3 Fuel Flow Pounds per Hour, as floating point double (FLOAT64)
+[0x0a48] = { fsuipc_types.float64, function() return eng3_running:read() * fuel_flow_3:read() * 7936.64 end, readonly },
+-- Engine 4 Fuel Flow Pounds per Hour, as floating point double (FLOAT64)
+[0x0ae0] = { fsuipc_types.float64, function() return eng4_running:read() * fuel_flow_4:read() * 7936.64 end, readonly },
+
+-- Aileron trim value/control: ï¿½16383 to +16383
 --# Custom offset - 0x0C02 Set Aileron Trim - data ref range +/1.0 scaled to +/- 16383
 [0x0c02] = { fsuipc_types.sint16, function() return aileron_trim:read() * 16383 end, function(value)  aileron_trim:write(value / 16383 ) end },
--- Rudder trim value/control: –16383 to +16383
+-- Rudder trim value/control: ï¿½16383 to +16383
 --# Custom offset - 0x0C04 Set Rudder Trim - data ref range +/1.0 scaled to +/- 16383
 [0x0c04] = { fsuipc_types.sint16, function() return rudder_trim:read() * 16383 end, function(value)  rudder_trim:write(value / 16383 ) end },
 
---Engine 1 Jet N1 as 0 – 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
+--Engine 1 Jet N1 as 0 ï¿½ 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
 [0x0898] = { fsuipc_types.uint16, function() return engine_rpm_0:read() *  16384 / 3000 end, readonly },
+--Engine 2 Jet N1 as 0 ï¿½ 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
+[0x0930] = { fsuipc_types.uint16, function() return engine_rpm_1:read() *  16384 / 3000 end, readonly },
+--Engine 3 Jet N1 as 0 ï¿½ 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
+[0x09c8] = { fsuipc_types.uint16, function() return engine_rpm_2:read() *  16384 / 3000 end, readonly },
+--Engine 3 Jet N1 as 0 ï¿½ 16384 (100%), or Prop RPM (derive RPM by multiplying this value by the RPM Scaler (see 08C8) and dividing by 65536). Note that Prop RPM is signed and negative for counter-rotating propellers.
+[0x0a60] = { fsuipc_types.uint16, function() return engine_rpm_3:read() *  16384 / 3000 end, readonly },
+
 --G Force: units unknown, but /624 seems to give quite sensible values. See also offset 1140
 [0x11ba] = { fsuipc_types.sint16, function() return g_nrml:read() * 625 end, readonly },
 -- Angle of Attack Indicator angle, with 360 degrees = 65536. The value 32767 is 180 degrees Angle of Attack. The angle is expressed in the usual FS 16-bit angle units (360 degrees = 65536), with 180 degrees pointing to the 0.0 position (right and down about 35 degrees in a Boeing type AofA indicator). Note that the indicator angle actually decreases as the wing AofA increases.
@@ -118,19 +144,23 @@ offsets=
    return (1 + aoa / acf_stall_warn_alpha:read()) / 2 * 65535 / 2 end, readonly },
 --Fail mode, 0 ok, Hydraulics failure = 1
 [0x0b62] = { fsuipc_types.uint8, function() return 0 end, readonly }, --  fixme: generalize
+--Gear position (nose): 0=full up, 16383=full down
+[0x0bec] = { fsuipc_types.uint32, function() return nose_gear_deploy_ratio:read() * 16383 end, readonly },
 --Gear position (right): 0=full up, 16383=full down
-[0x0bf0] = { fsuipc_types.uint32, function() return gear_deploy_ratio:read() * 16383 end, readonly },
--- Incidence “alpha”, in radians, as a double (FLOAT64). This is the aircraft body angle of attack (AoA) not the wing AoA.
+[0x0bf0] = { fsuipc_types.uint32, function() return right_gear_deploy_ratio:read() * 16383 end, readonly },
+--Gear position (left): 0=full up, 16383=full down
+[0x0bf4] = { fsuipc_types.uint32, function() return left_gear_deploy_ratio:read() * 16383 end, readonly },
+-- Incidence ï¿½alphaï¿½, in radians, as a double (FLOAT64). This is the aircraft body angle of attack (AoA) not the wing AoA.
 [0x2ed0] = { fsuipc_types.float64, function() return alpha:read() * 0.0174533 end, readonly },
--- Incidence “beta”, in radians, as a double (FLOAT64). This is the side slip angle.
+-- Incidence ï¿½betaï¿½, in radians, as a double (FLOAT64). This is the side slip angle.
 [0x2ed8] = { fsuipc_types.float64, function() return beta:read() * 0.0174533 end, readonly },
 -- TAS: True Air Speed, as knots * 128
 [0x02b8] = { fsuipc_types.uint32, function() return true_airspeed:read() *  1.943844 * 128 end, readonly },
 -- Vertical speed, signed, as 256 * metres/sec. For the more usual ft/min you need to apply the conversion *60*3.28084/256
 [0x02c8] = { fsuipc_types.uint32, function() return vertical_speed:read() *  256 / 60 / 3.28084 end, readonly },
--- Minute of local time in FS (0–59)
+-- Minute of local time in FS (0ï¿½59)
 [0x0239] = { fsuipc_types.uint8, function() return local_time_minutes:read() end, readonly },
--- Second of time in FS (0–59)
+-- Second of time in FS (0ï¿½59)
 [0x023a] = { fsuipc_types.uint8, function() return local_time_seconds:read() end, readonly },
 -- GS: Ground Speed, as 65536*metres/sec. Not updated in Slew mode!
 [0x02b4] = { fsuipc_types.uint32, function() return ground_speed:read() * 65536 end, readonly },
@@ -139,7 +169,8 @@ offsets=
 -- Pitch
 [0x0bb2]={ fsuipc_types.sint16, function() return yoke_pitch_ratio:read() * 16383 end, function(value) yoke_pitch_ratio:write(value / 16383 ) end },
 -- Roll
-[0x0bb6]={ fsuipc_types.sint16, function() return yoke_roll_ratio:read() * 16383 end, function(value)  yoke_roll_ratio:write(value / 16383 ) end },
+-- Note: we READ roll to drive autopilot, but for REP arrow we cannot rely on yoke position, so read aileron positiion instead. We use LEFT aileron (FIXME)
+[0x0bb6]={ fsuipc_types.sint16, function() return -lail1def:read() / ail1def_dn_max:read() * 16383 end, function(value)  yoke_roll_ratio:write(value / 16383 ) end },
 -- Heading
 [0x0bba] = { fsuipc_types.sint16, function() return yoke_heading_ratio:read() * 16383 end, function(value) yoke_heading_ratio:write(value / 16383) end },
 -- Aileron deflection, in radians, as a double (FLOAT64). Right turn positive, left turn negative. (This is the average of left and right)
@@ -152,7 +183,7 @@ offsets=
 [0x07d0]={ fsuipc_types.uint32, function() return altitude_hold_status:read() ~= 0 and 1 or 0 end, readonly },
 -- Crashed flag
 [0x0840]={ fsuipc_types.sint16, function() return crashed:read() end,  readonly},
--- Elevator trim control input: –16383 to +16383
+-- Elevator trim control input: ï¿½16383 to +16383
 [0x0bc0]={ fsuipc_types.sint16,  function() return elevator_trim:read() * 16383 end, function(value)  elevator_trim:write(value / 16383 ) end },
 -- Ready to Fly indicator. This is non-zero when FS is loading, or reloading a flight or aircraft or scenery, and
 -- becomes zero when flight mode is enabled (even if the simulator is paused or in Slew mode).
@@ -168,7 +199,11 @@ offsets=
 [0x3080] = { fsuipc_types.float64, function() return P_dot:read() * 0.01745 end, readonly },
 -- X (lateral, or left/right) acceleration in ft/sec/sec relative to the body axes in double floating point format.
 [0x3060] = { fsuipc_types.float64, function() return g_side:read() * 3.28084 * 9.81 end, readonly },
--- Pitch, *360/(65536*65536) for degrees. 0=level, –ve=pitch up, +ve=pitch down
+-- Y (vertical, or up/down) acceleration in ft/sec/sec relative to the body axes in double floating point format.
+[0x3068] = { fsuipc_types.float64, function() return g_nrml:read() * 3.28084 * 9.81 end, readonly },
+--Z (longitudinal, or forward/backward) acceleration in ft/sec/sec
+[0x3070] = { fsuipc_types.float64, function() return g_nrml:read() * 3.28084 * 9.81 end, readonly },
+-- Pitch, *360/(65536*65536) for degrees. 0=level, ï¿½ve=pitch up, +ve=pitch down
 [0x0578] = { fsuipc_types.sint32, function() return theta:read() * (65536 * 65536) / 360 end, readonly },
 -- Ambient air density, in slugs per cubic foot, double floating point.
 [0x28C0] = { fsuipc_types.float64, function() return rho:read() / 515.379 end, readonly },
@@ -180,6 +215,14 @@ offsets=
 -- Simulation rate *256 (i.e. 256=1x)
 -- FIXME!! : always 1.0 for now
 [0x0C1A] = { fsuipc_types.uint16, function() return 1 * 256 end, readonly },
+
+-- Flaps position indicator (left). This gives the proportional amount, with 16383=full deflection.
+-- fixme: now left is same as right
+[0x0be0] = { fsuipc_types.uint32, function() return  flaps_deployment_ratio:read() * 16383 end, readonly },
+
+-- Flaps position indicator (right). This gives the proportional amount, with 16383=full deflection.
+-- fixme: now left is same as right
+[0x0be4] = { fsuipc_types.uint32, function() return  flaps_deployment_ratio:read() * 16383 end, readonly },
 
 -- Surface type as a 32-bit integer
 -- x-plane
