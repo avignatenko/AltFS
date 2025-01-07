@@ -130,7 +130,12 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
         FSUIPCEngine engine(runner, (exePath / "lua").string());
 
         engine.init()
-            .then([&engine] { s_engine = &engine; })
+            .then(
+                [&engine]
+                {
+                    spdlog::info("FSUIPIC engine init done, starting to process messages");
+                    s_engine = &engine;
+                })
             .fail(
                 [](std::exception_ptr e)
                 {
