@@ -18,10 +18,12 @@ class ClientSender;
 class UDPClient
 {
 public:
-    UDPClient(asio::io_context& ex, const std::string& address, int port, int16_t baseId);
+    UDPClient(asio::io_context& ex, const std::string& address, int port, int localPort);
     ~UDPClient();
 
     cti::continuable<> connect();
+
+    cti::continuable<> unsubscribeAll();
 
     void writeDataref(const std::string& dataref, float f);
 

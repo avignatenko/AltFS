@@ -13,12 +13,11 @@ target_sources(
     PRIVATE
         "Include/XPlaneUDPClientCpp/BeaconListener.h"
         "Include/XPlaneUDPClientCpp/UDPClient.h"
-        "Include/XPlaneUDPClientCpp/ActiveObject.h"
         "Src/StdAfx.h"
         "Include/XPlaneUDPClientCpp/Utils.h"
         "Src/BeaconListener.cpp"
         "Src/UDPClient.cpp"
-        "Src/ActiveObject.cpp"
+        "Src/ObjectPool.h"
 )
 
 target_link_libraries(

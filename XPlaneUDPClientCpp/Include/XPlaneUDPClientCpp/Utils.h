@@ -42,7 +42,7 @@ Result waitOnContextAndUnpackRelaxed(cti::continuable_base<Data, Annotation>&& c
         .done();
 
     // fixme: cpu-intensive loop potentially
-    while (!done) context.poll();
+    while (!context.stopped() && !done) context.poll();
 
     return sync_result;
 }

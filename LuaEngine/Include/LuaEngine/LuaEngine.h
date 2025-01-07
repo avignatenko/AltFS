@@ -1,6 +1,5 @@
 #pragma once
 
-#include <XPlaneUDPClientCpp/ActiveObject.h>
 #include "LuaModule.h"
 
 #include <filesystem>
@@ -12,7 +11,7 @@ class state;
 
 class OffsetStatsGenerator;
 
-class LuaEngine : public ActiveObject, public LuaModuleAPI
+class LuaEngine : public LuaModuleAPI
 {
 public:
     LuaEngine(const std::filesystem::path& scriptPath);
@@ -20,13 +19,12 @@ public:
 
     // lua module api
     virtual sol::state& getLua() override { return lua(); }
-    virtual Runner* getLuaRunner() override { return this; }
 
     // own
-    promise::Defer load();
+    void load();
 
-    promise::Defer readFromSim(uint32_t offset, uint32_t size, std::byte* data);
-    promise::Defer writeToSim(uint32_t offset, uint32_t size, const std::byte* data);
+    void readFromSim(uint32_t offset, uint32_t size, std::byte* data);
+    void writeToSim(uint32_t offset, uint32_t size, const std::byte* data);
 
 private:
     sol::state& lua() { return *m_lua; }

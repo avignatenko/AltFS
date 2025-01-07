@@ -1,5 +1,5 @@
 #include "../Include/LuaEngine/OffsetStatsGenerator.h"
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include <spdlog/spdlog.h>
 

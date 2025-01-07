@@ -46,10 +46,10 @@ endif()
 # Include sub-projects.
 
 if(WIN32)
-    add_subdirectory("LuaEngine")
-    add_subdirectory("LuaTest")
     add_subdirectory("AltFS")
 endif()
 
+add_subdirectory("LuaEngine")
+add_subdirectory("LuaTest")
 add_subdirectory("promise-cpp")
 add_subdirectory("XPlaneUDPClientCpp")

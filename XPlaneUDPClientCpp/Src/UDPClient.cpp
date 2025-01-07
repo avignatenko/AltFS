@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 
-#include "../Include/XPlaneUDPClientCpp/ActiveObject.h"
+#include "ObjectPool.h"
+
 #include "../Include/XPlaneUDPClientCpp/UDPClient.h"
 #include "../Include/XPlaneUDPClientCpp/Utils.h"
 
@@ -75,7 +76,7 @@ public:
 
         return socket_
             .async_send_to(buffer(data.get(), sizeof(SubscribeDataref)), endpointRemote_, cti::use_continuable)
-            .then([data](std::size_t bytes_transferred) {});
+            .then([data](std::size_t bytes_transferred) { spdlog::debug("Subscribed dataref {}", data->num); });
     }
 
     cti::continuable<> unsubscribeDataref(int num, const std::string& dataref)
@@ -92,7 +93,7 @@ public:
 
         return socket_
             .async_send_to(buffer(data.get(), sizeof(SubscribeDataref)), endpointRemote_, cti::use_continuable)
-            .then([data](std::size_t bytes_transferred) {});
+            .then([data](std::size_t bytes_transferred) { spdlog::debug("Unsubscribed dataref {}", data->num); });
     }
 
 private:
@@ -103,39 +104,50 @@ private:
 class ClientReceiver : public std::enable_shared_from_this<ClientReceiver>
 {
 public:
-    ClientReceiver(udp::socket& socket, std::shared_ptr<ClientSender> sender, int16_t baseId)
-        : socket_(socket), sender_(sender), baseId_(baseId)
+    ClientReceiver(udp::socket& socket, std::shared_ptr<ClientSender> sender) : socket_(socket), sender_(sender)
     {
         spdlog::info("X-Plane UDP Receiver client init");
     }
 
     void start() { doReceive(); }
 
-    std::size_t getDatarefNum(const std::string& dataref)
+    unsigned int hash(const char* str)
     {
-        auto found = std::find_if(datarefs_.begin(), datarefs_.end(),
-                                  [dataref](const auto& elem) { return elem.first == dataref; });
-        if (found == datarefs_.end())
-        {
-            datarefs_.push_back({dataref, nullptr});
-            return datarefs_.size() - 1;
-        }
+        unsigned int h;
+        unsigned char* p;
 
-        return found - datarefs_.begin();
+        const int MULTIPLIER = 37;
+        h = 0;
+        for (p = (unsigned char*)str; *p != '\0'; p++) h = MULTIPLIER * h + *p;
+        return h;  // or, h % ARRAY_SIZE;
+    }
+
+    int getDatarefNum(const std::string& dataref)
+    {
+        int hashed = hash(dataref.c_str());
+        return hashed;
     }
 
     cti::continuable<> subscribeDataref(const std::string& dataref, int freq, std::function<void(float)> callback)
     {
         spdlog::debug("X-Plane UDP Receiver client subscribe dataref {}", dataref);
 
-        size_t num = getDatarefNum(dataref);
+        int num = getDatarefNum(dataref);
 
-        return sender_->subscribeDataref(dataref, freq, num + baseId_)
+        return sender_->unsubscribeDataref(num, dataref)
             .then(
-                [self = weak_from_this(), callback, num]
+                [self = weak_from_this(), dataref, freq, callback, num]() -> cti::continuable<>
+                {
+                    if (self.expired()) return cti::make_ready_continuable<>();
+                    auto lockedSelf = self.lock();
+                    return lockedSelf->sender_->subscribeDataref(dataref, freq, num);
+                })
+            .then(
+                [self = weak_from_this(), callback, num, dataref]
                 {
                     if (self.expired()) return;
                     auto lockedSelf = self.lock();
+                    lockedSelf->datarefs_[num].first = dataref;
                     lockedSelf->datarefs_[num].second = callback;
                 });
     }
@@ -146,13 +158,13 @@ public:
 
         size_t num = getDatarefNum(dataref);
         // send unsubscribe
-        return sender_->unsubscribeDataref(num + baseId_, dataref)
+        return sender_->unsubscribeDataref(num, dataref)
             .then(
                 [self = weak_from_this(), num]
                 {
                     if (self.expired()) return;
                     auto lockedSelf = self.lock();
-                    lockedSelf->datarefs_[num].second = nullptr;
+                    lockedSelf->datarefs_.erase(num);
                 });
     }
 
@@ -160,10 +172,10 @@ public:
     {
         spdlog::debug("X-Plane UDP Receiver client unsubscribe all");
         std::vector<cti::continuable<>> ops;
-        for (size_t i = 0; i < datarefs_.size(); ++i)
+        for (const auto& [key, value] : datarefs_)
         {
             // send unsubscribe
-            ops.push_back(sender_->unsubscribeDataref(i, datarefs_[i].first));
+            ops.push_back(sender_->unsubscribeDataref(key, value.first));
         }
 
         return cti::when_all(std::move(ops))
@@ -194,9 +206,9 @@ private:
 
     cti::continuable<std::size_t, std::shared_ptr<ReceiveDataref>> receive()
     {
-        auto data = std::make_shared<ReceiveDataref>();
+        auto data = receiveObjectsPool_.aquire();
         return socket_
-            .async_receive_from(asio::buffer(data.get(), sizeof(ReceiveDataref)), senderEndpoint, cti::use_continuable)
+            .async_receive_from(asio::buffer(data.get(), sizeof(ReceiveDataref)), senderEndpoint_, cti::use_continuable)
             .then([data](std::size_t reply_length) { return std::make_tuple(reply_length, data); });
     }
 
@@ -210,8 +222,8 @@ private:
 
                 if (reply_length < 5) return lockedSelf->doReceive();
 
-                int port = lockedSelf->senderEndpoint.port();
-                std::string addr = lockedSelf->senderEndpoint.address().to_string();
+                int port = lockedSelf->senderEndpoint_.port();
+                std::string addr = lockedSelf->senderEndpoint_.address().to_string();
 
                 // dispatch
 
@@ -220,37 +232,35 @@ private:
                 {
                     const ReceiveDataref::Value& valueData = data->value[i];
 
-                    int correctedNum = valueData.num - lockedSelf->baseId_;
-
-                    if (correctedNum < 0 || correctedNum >= (int)lockedSelf->datarefs_.size())
+                    auto datarefIter = lockedSelf->datarefs_.find(valueData.num);
+                    if (datarefIter == lockedSelf->datarefs_.end())
                     {
                         // not our message (fixme, how to unsubscribe?)
                         continue;
                     }
 
-                    auto& dataref = lockedSelf->datarefs_[correctedNum];
-
-                    if (dataref.second)  // subscribed?
-                        dataref.second(valueData.value);
+                    const auto& value = datarefIter->second;
+                    if (value.second)  // subscribed?
+                        value.second(valueData.value);
                 }
 
+                lockedSelf->receiveObjectsPool_.release(data);
                 lockedSelf->doReceive();
             });
     }
 
 private:
     udp::socket& socket_;
-    std::deque<std::pair<std::string, std::function<void(float)>>> datarefs_;
+    std::unordered_map<int, std::pair<std::string, std::function<void(float)>>> datarefs_;
     std::shared_ptr<ClientSender> sender_;
-    udp::endpoint senderEndpoint;
-    int16_t baseId_;
+    udp::endpoint senderEndpoint_;
+    ObjectPool<ReceiveDataref> receiveObjectsPool_;
 };
 
-xplaneudpcpp::UDPClient::UDPClient(asio::io_context& ex, const std::string& address, int port, int16_t baseId)
+xplaneudpcpp::UDPClient::UDPClient(asio::io_context& ex, const std::string& address, int port, int localPort)
     : socket_(ex), ex_(ex)
 {
     spdlog::info("X-Plane UDP Client created with address {}:{}", address, port);
-    const int localPort = 50000;
     spdlog::info("X-Plane UDP Client local port is {}", localPort);
 
     udp::endpoint sendEndpoint(udp::v4(), localPort);
@@ -259,7 +269,7 @@ xplaneudpcpp::UDPClient::UDPClient(asio::io_context& ex, const std::string& addr
     socket_.bind(sendEndpoint);
 
     m_clientSender = std::make_shared<ClientSender>(socket_, address, port);
-    m_clientReceiver = std::make_shared<ClientReceiver>(socket_, m_clientSender, baseId);
+    m_clientReceiver = std::make_shared<ClientReceiver>(socket_, m_clientSender);
 
     m_clientReceiver->start();
 }
@@ -268,12 +278,17 @@ xplaneudpcpp::UDPClient::~UDPClient()
 {
     spdlog::info("X-Plane UDP Client shutdown attempt...");
 
-    m_clientReceiver->unsubscribeAll().apply(waitOnContext(ex_));
+    unsubscribeAll().apply(waitOnContext(ex_));
 
     m_clientReceiver.reset();
     m_clientSender.reset();
 
     spdlog::info("X-Plane UDP Client shutdown successful");
+}
+
+cti::continuable<> xplaneudpcpp::UDPClient::unsubscribeAll()
+{
+    return m_clientReceiver->unsubscribeAll();
 }
 
 cti::continuable<> UDPClient::connect()

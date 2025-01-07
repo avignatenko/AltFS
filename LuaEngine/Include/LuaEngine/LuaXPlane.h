@@ -2,10 +2,15 @@
 
 #include "LuaModule.h"
 
+#include <XPlaneUDPClientCpp/BeaconListener.h>
+
+#include <asio.hpp>
+#include <continuable/continuable.hpp>
+
 #include <memory>
+
 namespace xplaneudpcpp
 {
-class BeaconListener;
 class UDPClient;
 }  // namespace xplaneudpcpp
 
@@ -15,19 +20,18 @@ class UDPClient;
 class LuaXPlane
 {
 public:
-    LuaXPlane(LuaModuleAPI& api);
+    LuaXPlane(LuaModuleAPI& api, asio::io_context& ex);
     ~LuaXPlane();
 
-    promise::Defer discover();
-    promise::Defer connect(const std::string& address, int port, int16_t baseId);
+    cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> discover();
+    cti::continuable<> connect(const std::string& address, int port, int localPort);
 
-    promise::Defer init();
+    void init();
 
     bool isConnected() const { return xplaneClient_ != nullptr; }
 
 private:
     // x-plane
-    std::unique_ptr<xplaneudpcpp::BeaconListener> xplaneDiscoverer_;
     std::unique_ptr<xplaneudpcpp::UDPClient> xplaneClient_;
 
     LuaModuleAPI& api_;
@@ -35,4 +39,6 @@ private:
     static LuaXPlane* s_instance;
 
     friend class Dataref;
+
+    asio::io_context& ex_;
 };

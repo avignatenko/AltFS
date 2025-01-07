@@ -1,7 +1,6 @@
 #include "../Include/LuaEngine/LuaXPlane.h"
-#include "stdafx.h"
+#include "StdAfx.h"
 
-#include <XPlaneUDPClientCpp/ActiveObject.h>
 #include <XPlaneUDPClientCpp/BeaconListener.h>
 #include <XPlaneUDPClientCpp/UDPClient.h>
 
@@ -20,7 +19,7 @@ enum class XPlaneType
 
 LuaXPlane* LuaXPlane::s_instance = nullptr;
 
-LuaXPlane::LuaXPlane(LuaModuleAPI& api) : api_(api)
+LuaXPlane::LuaXPlane(LuaModuleAPI& api, asio::io_context& ex) : api_(api), ex_(ex)
 {
     s_instance = this;
 }
@@ -41,9 +40,8 @@ public:
 
         if (!subcribed_)
         {
-            LuaXPlane::s_instance->xplaneClient_->subscribeDataref(
-                path_, freq_, [this](float value)
-                { LuaXPlane::s_instance->api_.getLuaRunner()->run([this, value] { value_ = value; }); });
+            LuaXPlane::s_instance->xplaneClient_->subscribeDataref(path_, freq_,
+                                                                   [this](float value) { value_ = value; });
 
             subcribed_ = true;
         }
@@ -66,45 +64,24 @@ private:
     bool subcribed_ = false;
 };
 
-promise::Defer LuaXPlane::discover()
+cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> LuaXPlane::discover()
 {
-    return promise::newPromise(
-        [this](promise::Defer& p)
-        {
-            // start x-plane discovery
-            xplaneDiscoverer_.reset(new xplaneudpcpp::BeaconListener);
-            xplaneDiscoverer_->getXPlaneServerBroadcast().then(
-                [this, p, caller = Runner::threadInstance](const xplaneudpcpp::BeaconListener::ServerInfo& info)
-                { caller->run([p, info] { p.resolve(info); }); });
-        });
+    return xplaneudpcpp::BeaconListener::getXPlaneServerBroadcastAsync(ex_.get_executor());
 }
 
-promise::Defer LuaXPlane::connect(const std::string& address, int port, int16_t baseId)
+cti::continuable<> LuaXPlane::connect(const std::string& address, int port, int localPort)
 {
-    return newPromiseAsync(api_.getLuaRunner(),
-                           [this, address, port, baseId](Runner* caller, promise::Defer p)
-                           {
-                               xplaneClient_ = std::make_unique<xplaneudpcpp::UDPClient>(address, port, baseId);
-                               xplaneClient_->connect().then([=] { caller->run([=] { p.resolve(); }); });
-                           });
+    xplaneClient_ = std::make_unique<xplaneudpcpp::UDPClient>(ex_, address, port, localPort);
+    return xplaneClient_->connect();
 }
 
-promise::Defer LuaXPlane::init()
+void LuaXPlane::init()
 {
-    return newPromiseAsync(
-        api_.getLuaRunner(),
-        [this](Runner* caller, promise::Defer d)
-        {
-            // x-plane
+    auto xplane = api_.getLua()["xplane"].get_or_create<sol::table>();
 
-            auto xplane = api_.getLua()["xplane"].get_or_create<sol::table>();
+    xplane["types"] =
+        api_.getLua().create_table_with("int", 1, "float", 2, "intarray", 3, "floatarray", 4, "string", 5);
 
-            xplane["types"] =
-                api_.getLua().create_table_with("int", 1, "float", 2, "intarray", 3, "floatarray", 4, "string", 5);
-
-            xplane.new_usertype<Dataref>("dataref", sol::constructors<Dataref(const std::string&, int, int)>(), "read",
-                                         &Dataref::read, "write", &Dataref::write);
-
-            caller->run([d] { d.resolve(); });
-        });
+    xplane.new_usertype<Dataref>("dataref", sol::constructors<Dataref(const std::string&, int, int)>(), "read",
+                                 &Dataref::read, "write", &Dataref::write);
 }

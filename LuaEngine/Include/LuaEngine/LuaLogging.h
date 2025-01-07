@@ -11,7 +11,7 @@ public:
     LuaLogging(LuaModuleAPI& api);
     ~LuaLogging();
 
-    promise::Defer init();
+    void init();
 
 private:
     LuaModuleAPI& api_;

@@ -21,14 +21,14 @@ TEST_CASE("Simple datadaref test", "[UDPClient]")
         .then(
             [&client, &io](xplaneudpcpp::BeaconListener::ServerInfo info)
             {
-                client = std::make_unique<xplaneudpcpp::UDPClient>(io, info.host, info.port, 0);
+                client = std::make_unique<xplaneudpcpp::UDPClient>(io, info.host, info.port, 50000);
                 return client->connect();
             })
         .then(
             [&client, &t]()
             {
-                client->subscribeDataref("sim/flightmodel/position/latitude", 1,
-                                         [](float f) { spdlog::info("Latitude: {}", f); });
+                // client->subscribeDataref("sim/flightmodel/position/latitude", 1,
+                //                          [](float f) { spdlog::info("Latitude: {}", f); });
 
                 t.expires_after(std::chrono::seconds(5));
                 return t.async_wait(cti::use_continuable);
