@@ -22,7 +22,7 @@ target_sources(
 
 target_link_libraries(
     ${PROJECT_NAME}
-    PUBLIC promise-cpp asio::asio continuable::continuable
+    PUBLIC asio::asio continuable::continuable
     PRIVATE spdlog::spdlog
 )
 

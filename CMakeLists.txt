@@ -51,5 +51,4 @@ endif()
 
 add_subdirectory("LuaEngine")
 add_subdirectory("LuaTest")
-add_subdirectory("promise-cpp")
 add_subdirectory("XPlaneUDPClientCpp")

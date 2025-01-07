@@ -12,7 +12,7 @@ target_sources(${PROJECT_NAME} PRIVATE "Src/LuaTest.cpp" "Src/Pch.h")
 
 target_link_libraries(
     ${PROJECT_NAME}
-    PRIVATE promise-cpp LuaEngine XPlaneUDPClientCpp spdlog::spdlog
+    PRIVATE LuaEngine XPlaneUDPClientCpp spdlog::spdlog
 )
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE "Src/Pch.h")

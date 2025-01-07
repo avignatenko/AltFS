@@ -25,7 +25,7 @@ target_sources(
 
 target_link_libraries(
     ${PROJECT_NAME}
-    PRIVATE XPlaneUDPClientCpp promise-cpp spdlog::spdlog sol2::sol2
+    PRIVATE XPlaneUDPClientCpp spdlog::spdlog sol2::sol2
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE PUBLIC Include)

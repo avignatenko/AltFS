@@ -39,8 +39,8 @@ typedef struct tagXC_ACTION_WRITE_HDR
 #define XC_RETURN_FAILURE 0
 #define XC_RETURN_SUCCESS 1
 
-FSUIPCEngine::FSUIPCEngine(const std::filesystem::path& scriptPath)
-    : m_lua(scriptPath), m_xPlaneModule(m_lua), m_logModule(m_lua)
+FSUIPCEngine::FSUIPCEngine(asio::io_context& ex, const std::filesystem::path& scriptPath)
+    : m_lua(scriptPath), m_xPlaneModule(m_lua, ex), m_logModule(m_lua)
 
 {
 }
@@ -55,18 +55,18 @@ FSUIPCEngine::~FSUIPCEngine()
     }
 }
 
-promise::Defer FSUIPCEngine::init()
+cti::continuable<> FSUIPCEngine::init()
 {
-    // init with current prcoess  lower 16 bits
-    int currentProcessId = GetCurrentProcessId();
-    int16_t startId = currentProcessId % 0xFFFF;
-
     return m_xPlaneModule.discover()
-        .then([this, startId](xplaneudpcpp::BeaconListener::ServerInfo& info)
-              { return m_xPlaneModule.connect(info.host, info.port, startId); })
-        .then([&] { return m_logModule.init(); })
-        .then([&] { return m_xPlaneModule.init(); })
-        .then([&] { return m_lua.load(); });
+        .then([this](xplaneudpcpp::BeaconListener::ServerInfo info)
+              { return m_xPlaneModule.connect(info.host, info.port, 50000); })
+        .then(
+            [this]
+            {
+                m_logModule.init();
+                m_xPlaneModule.init();
+                m_lua.load();
+            });
 }
 
 LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)
@@ -155,13 +155,9 @@ void FSUIPCEngine::readFromSim(DWORD offset, DWORD size, void* data)
     m_lua.readFromSim(offset, size, static_cast<std::byte*>(data));
 }
 
-promise::Defer FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
+void FSUIPCEngine::writeToSim(DWORD offset, DWORD size, const void* data)
 {
-    return promise::newPromise(
-        [&](promise::Defer& d)
-        {
-            spdlog::debug("Write request, offset {0:#x}, size {1}", offset, size);
+    spdlog::debug("Write request, offset {0:#x}, size {1}", offset, size);
 
-            m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
-        });
+    m_lua.writeToSim(offset, size, static_cast<const std::byte*>(data));
 }

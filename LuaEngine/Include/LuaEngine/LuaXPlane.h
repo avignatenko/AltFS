@@ -14,9 +14,6 @@ namespace xplaneudpcpp
 class UDPClient;
 }  // namespace xplaneudpcpp
 
-#define PM_MULTITHREAD
-#include <promise-cpp/promise.hpp>
-
 class LuaXPlane
 {
 public:

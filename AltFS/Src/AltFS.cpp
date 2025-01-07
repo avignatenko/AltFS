@@ -12,37 +12,15 @@
 
 #include <iostream>
 
+#include <asio.hpp>
+
 #define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
-
-constexpr int WM_CUSTOM_MESSAGE = WM_USER + 1;
 
 // register our message
 static const UINT XC_CALL = RegisterWindowMessage("FsasmLib:IPC");
 
 FSUIPCEngine* s_engine = nullptr;
-
-class MFCRunner : public Runner
-{
-public:
-    MFCRunner()
-    {
-        m_threadId = ::GetCurrentThreadId();
-        Runner::threadInstance = this;
-    }
-
-    ~MFCRunner() { Runner::threadInstance = nullptr; }
-
-    virtual bool run(std::function<void()> f) override
-    {
-        std::function<void()>* func = new std::function<void()>(f);
-        PostThreadMessage(m_threadId, WM_USER + 1, WPARAM(func), 0);
-        return true;
-    }
-
-private:
-    DWORD m_threadId;
-};
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -67,6 +45,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
     if (uMsg == XC_CALL)
     {
+        if (!s_engine) return 0;
         return s_engine->processMessage(wParam, lParam);
     }
 
@@ -143,36 +122,44 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 
     ShowWindow(hwnd, nCmdShow);
 
-    MFCRunner runner;
-    FSUIPCEngine engine((exePath / "lua").string());
-    s_engine = &engine;
+    asio::io_context runner;
+    auto work = asio::make_work_guard(runner);
 
-    engine.init().fail(
-        [](const std::string& e)
-        {
-            ::MessageBox(NULL, fmt::format("Fatal error: {}", e).c_str(), "Error", MB_OK);
-            PostQuitMessage(1);
-        });
-
-    // Run the message loop.
-
-    MSG msg = {};
-    while (GetMessage(&msg, NULL, 0, 0))
+    // make sure engine will be deleted before runner loop
     {
-        // process internal runner message queue
-        if (msg.message == WM_CUSTOM_MESSAGE)
+        FSUIPCEngine engine(runner, (exePath / "lua").string());
+
+        engine.init()
+            .then([&engine] { s_engine = &engine; })
+            .fail(
+                [](std::exception_ptr e)
+                {
+                    try
+                    {
+                        std::rethrow_exception(e);
+                    }
+                    catch (const std::runtime_error& e)
+                    {
+                        ::MessageBox(NULL, fmt::format("Fatal error: {}", e.what()).c_str(), "Error", MB_OK);
+                    }
+
+                    PostQuitMessage(1);
+                });
+
+        // Run the message loop.
+
+        MSG msg = {};
+        while (GetMessage(&msg, NULL, 0, 0))
         {
-            auto* func = reinterpret_cast<std::function<void()>*>(msg.wParam);
-            (*func)();
-            delete func;
-            continue;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+
+            runner.poll();
         }
 
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        s_engine = nullptr;
     }
-
-    s_engine = nullptr;
+    runner.stop();
 
     return 0;
 }
