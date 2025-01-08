@@ -52,6 +52,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+    // todo: add closing
+    spdlog::shutdown();
+
+    return FALSE;  // let others work on this
+}
+
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
 {
     if (AllocConsole())
@@ -62,8 +70,9 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
         freopen_s(&fpstdout, "CONOUT$", "w", stdout);
         freopen_s(&fpstderr, "CONOUT$", "w", stderr);
 
-        std::cout << "This is a test of the attached console" << std::endl;
-        // FreeConsole();
+        SetConsoleCtrlHandler(CtrlHandler, TRUE);
+        // std::cout << "This is a test of the attached console" << std::endl;
+        //  FreeConsole();
     }
 
     // get filename of the executable
@@ -154,17 +163,32 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
         // Run the message loop.
 
         MSG msg = {};
-        while (GetMessage(&msg, NULL, 0, 0))
+        bool endLoop = false;
+        while (!endLoop)
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-            runner.poll();
+            runner.poll_one();
+
+            if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
+            {
+                if (GetMessage(&msg, NULL, 0, 0))
+                {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                }
+                else
+                {
+                    endLoop = true;
+                }
+            }
         }
-
         s_engine = nullptr;
     }
     runner.stop();
+
+    spdlog::info("End of run");
+    spdlog::shutdown();
 
     return 0;
 }
