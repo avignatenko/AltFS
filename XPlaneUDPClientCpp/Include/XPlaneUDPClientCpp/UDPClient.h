@@ -25,10 +25,10 @@ public:
 
     cti::continuable<> unsubscribeAll();
 
-    void writeDataref(const std::string& dataref, float f);
+    cti::continuable<> writeDataref(const std::string& dataref, float f);
 
-    void subscribeDataref(const std::string& dataref, int freq, std::function<void(float)> callback);
-    void unsubscribeDataref(const std::string& dataref);
+    cti::continuable<> subscribeDataref(const std::string& dataref, int freq, std::function<void(float)> callback);
+    cti::continuable<> unsubscribeDataref(const std::string& dataref);
 
 private:
     asio::io_context& ex_;

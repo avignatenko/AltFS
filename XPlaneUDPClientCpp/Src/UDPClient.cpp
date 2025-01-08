@@ -302,20 +302,20 @@ cti::continuable<> UDPClient::connect()
     return cti::make_ready_continuable();
 }
 
-void xplaneudpcpp::UDPClient::writeDataref(const std::string& dataref, float f)
+cti::continuable<> xplaneudpcpp::UDPClient::writeDataref(const std::string& dataref, float f)
 {
-    m_clientSender->writeDataref(dataref, f);
+    return m_clientSender->writeDataref(dataref, f);
 }
 
-void xplaneudpcpp::UDPClient::subscribeDataref(const std::string& dataref, int freq,
-                                               std::function<void(float)> callback)
+cti::continuable<> xplaneudpcpp::UDPClient::subscribeDataref(const std::string& dataref, int freq,
+                                                             std::function<void(float)> callback)
 {
-    m_clientReceiver->subscribeDataref(dataref, freq, callback);
+    return m_clientReceiver->subscribeDataref(dataref, freq, callback);
 }
 
-void UDPClient::unsubscribeDataref(const std::string& dataref)
+cti::continuable<> UDPClient::unsubscribeDataref(const std::string& dataref)
 {
-    m_clientReceiver->unsubscribeDataref(dataref);
+    return m_clientReceiver->unsubscribeDataref(dataref);
 }
 
 }  // namespace xplaneudpcpp
