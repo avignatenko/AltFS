@@ -104,7 +104,8 @@ private:
 class ClientReceiver : public std::enable_shared_from_this<ClientReceiver>
 {
 public:
-    ClientReceiver(udp::socket& socket, std::shared_ptr<ClientSender> sender) : socket_(socket), sender_(sender)
+    ClientReceiver(asio::any_io_executor exCallback, udp::socket& socket, std::shared_ptr<ClientSender> sender)
+        : exCallback_(exCallback), socket_(socket), sender_(sender)
     {
         spdlog::info("X-Plane UDP Receiver client init");
     }
@@ -236,12 +237,16 @@ private:
                     if (datarefIter == lockedSelf->datarefs_.end())
                     {
                         // not our message (fixme, how to unsubscribe?)
+                        spdlog::debug("Not our message: {} with value {}", valueData.num, valueData.value);
                         continue;
                     }
 
-                    const auto& value = datarefIter->second;
-                    if (value.second)  // subscribed?
-                        value.second(valueData.value);
+                    spdlog::debug("Received: {} with value {}", valueData.num, valueData.value);
+
+                    const auto& datarefCallback = datarefIter->second;
+                    if (datarefCallback.second)  // subscribed?
+                        asio::post(lockedSelf->exCallback_,
+                                   [c = datarefCallback.second, v = valueData.value] { c(v); });
                 }
 
                 lockedSelf->receiveObjectsPool_.release(data);
@@ -250,6 +255,7 @@ private:
     }
 
 private:
+    asio::any_io_executor exCallback_;
     udp::socket& socket_;
     std::unordered_map<int, std::pair<std::string, std::function<void(float)>>> datarefs_;
     std::shared_ptr<ClientSender> sender_;
@@ -269,7 +275,7 @@ xplaneudpcpp::UDPClient::UDPClient(asio::io_context& ex, const std::string& addr
     socket_.bind(sendEndpoint);
 
     m_clientSender = std::make_shared<ClientSender>(socket_, address, port);
-    m_clientReceiver = std::make_shared<ClientReceiver>(socket_, m_clientSender);
+    m_clientReceiver = std::make_shared<ClientReceiver>(ex.get_executor(), socket_, m_clientSender);
 
     m_clientReceiver->start();
 }
