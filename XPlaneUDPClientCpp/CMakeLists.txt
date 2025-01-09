@@ -17,6 +17,7 @@ target_sources(
         "Include/XPlaneUDPClientCpp/Utils.h"
         "Src/BeaconListener.cpp"
         "Src/UDPClient.cpp"
+        "Src/UDPClientAsync.cpp"
         "Src/ObjectPool.h"
 )
 

@@ -2,7 +2,7 @@
 #include "StdAfx.h"
 
 #include <XPlaneUDPClientCpp/BeaconListener.h>
-#include <XPlaneUDPClientCpp/UDPClient.h>
+#include <XPlaneUDPClientCpp/UDPClientAsync.h>
 
 #include <spdlog/spdlog.h>
 #include <functional>
@@ -19,7 +19,7 @@ enum class XPlaneType
 
 LuaXPlane* LuaXPlane::s_instance = nullptr;
 
-LuaXPlane::LuaXPlane(LuaModuleAPI& api, asio::io_context& ex) : api_(api), ex_(ex)
+LuaXPlane::LuaXPlane(LuaModuleAPI& api, asio::any_io_executor ex) : api_(api), ex_(ex)
 {
     s_instance = this;
 }
@@ -66,12 +66,12 @@ private:
 
 cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> LuaXPlane::discover()
 {
-    return xplaneudpcpp::BeaconListener::getXPlaneServerBroadcastAsync(ex_.get_executor());
+    return xplaneudpcpp::BeaconListener::getXPlaneServerBroadcastAsync(ex_);
 }
 
 cti::continuable<> LuaXPlane::connect(const std::string& address, int port, int localPort)
 {
-    xplaneClient_ = std::make_unique<xplaneudpcpp::UDPClient>(ex_, address, port, localPort);
+    xplaneClient_ = std::make_unique<xplaneudpcpp::UDPClientAsync>(ex_, address, port, localPort);
     return xplaneClient_->connect();
 }
 

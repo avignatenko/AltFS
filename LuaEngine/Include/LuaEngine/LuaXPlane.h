@@ -11,13 +11,13 @@
 
 namespace xplaneudpcpp
 {
-class UDPClient;
+class UDPClientAsync;
 }  // namespace xplaneudpcpp
 
 class LuaXPlane
 {
 public:
-    LuaXPlane(LuaModuleAPI& api, asio::io_context& ex);
+    LuaXPlane(LuaModuleAPI& api, asio::any_io_executor ex);
     ~LuaXPlane();
 
     cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> discover();
@@ -29,7 +29,7 @@ public:
 
 private:
     // x-plane
-    std::unique_ptr<xplaneudpcpp::UDPClient> xplaneClient_;
+    std::unique_ptr<xplaneudpcpp::UDPClientAsync> xplaneClient_;
 
     LuaModuleAPI& api_;
 
@@ -37,5 +37,5 @@ private:
 
     friend class Dataref;
 
-    asio::io_context& ex_;
+    asio::any_io_executor ex_;
 };

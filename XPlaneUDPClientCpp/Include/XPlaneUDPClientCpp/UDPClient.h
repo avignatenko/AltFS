@@ -15,6 +15,7 @@ namespace xplaneudpcpp
 class ClientReceiver;
 class ClientSender;
 
+// This client will use ex context to run it's operations and call callbacks
 class UDPClient
 {
 public:
@@ -36,4 +37,5 @@ private:
     std::shared_ptr<ClientSender> m_clientSender;
     std::shared_ptr<ClientReceiver> m_clientReceiver;
 };
+
 }  // namespace xplaneudpcpp

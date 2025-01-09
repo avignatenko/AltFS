@@ -245,8 +245,7 @@ private:
 
                     const auto& datarefCallback = datarefIter->second;
                     if (datarefCallback.second)  // subscribed?
-                        asio::post(lockedSelf->exCallback_,
-                                   [c = datarefCallback.second, v = valueData.value] { c(v); });
+                        datarefCallback.second(valueData.value);
                 }
 
                 lockedSelf->receiveObjectsPool_.release(data);

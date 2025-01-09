@@ -58,6 +58,7 @@ int main(int argc, char** argv)
 {
     bool s_exit = false;
     asio::io_context runner;
+    auto work = asio::make_work_guard(runner);
 
     std::filesystem::path exePath(argv[0]);
 
@@ -72,7 +73,7 @@ int main(int argc, char** argv)
     spdlog::info("AltFs started");
 
     LuaEngine m_lua(exePath.parent_path() / "lua");
-    LuaXPlane m_xPlaneModule(m_lua, runner);
+    LuaXPlane m_xPlaneModule(m_lua, runner.get_executor());
     LuaLogging luaLogging(m_lua);
 
     int16_t currentposition = -16383;
