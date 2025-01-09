@@ -16,7 +16,7 @@
 class FSUIPCEngine
 {
 public:
-    FSUIPCEngine(asio::io_context& ex, const std::filesystem::path& scriptPath);
+    FSUIPCEngine(asio::any_io_executor ex, const std::filesystem::path& scriptPath);
     ~FSUIPCEngine();
 
     cti::continuable<> init();

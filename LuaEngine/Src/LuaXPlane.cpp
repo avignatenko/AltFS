@@ -60,7 +60,7 @@ private:
     std::string path_;
     int type_;
     int freq_;
-    float value_ = 0.0;
+    std::atomic<float> value_ = 0.0;
     bool subcribed_ = false;
 };
 

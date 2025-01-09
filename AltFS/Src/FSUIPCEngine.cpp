@@ -39,7 +39,7 @@ typedef struct tagXC_ACTION_WRITE_HDR
 #define XC_RETURN_FAILURE 0
 #define XC_RETURN_SUCCESS 1
 
-FSUIPCEngine::FSUIPCEngine(asio::io_context& ex, const std::filesystem::path& scriptPath)
+FSUIPCEngine::FSUIPCEngine(asio::any_io_executor ex, const std::filesystem::path& scriptPath)
     : m_lua(scriptPath), m_xPlaneModule(m_lua, ex), m_logModule(m_lua)
 
 {

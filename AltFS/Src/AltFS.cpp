@@ -136,7 +136,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 
     // make sure engine will be deleted before runner loop
     {
-        FSUIPCEngine engine(runner, (exePath / "lua").string());
+        FSUIPCEngine engine(runner.get_executor(), (exePath / "lua").string());
 
         engine.init()
             .then(
