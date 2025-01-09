@@ -77,11 +77,14 @@ cti::continuable<> LuaXPlane::connect(const std::string& address, int port, int 
 
 void LuaXPlane::init()
 {
-    auto xplane = api_.getLua()["xplane"].get_or_create<sol::table>();
+    api_.runAsync(
+        [this](sol::state& lua)
+        {
+            auto xplane = lua["xplane"].get_or_create<sol::table>();
 
-    xplane["types"] =
-        api_.getLua().create_table_with("int", 1, "float", 2, "intarray", 3, "floatarray", 4, "string", 5);
+            xplane["types"] = lua.create_table_with("int", 1, "float", 2, "intarray", 3, "floatarray", 4, "string", 5);
 
-    xplane.new_usertype<Dataref>("dataref", sol::constructors<Dataref(const std::string&, int, int)>(), "read",
-                                 &Dataref::read, "write", &Dataref::write);
+            xplane.new_usertype<Dataref>("dataref", sol::constructors<Dataref(const std::string&, int, int)>(), "read",
+                                         &Dataref::read, "write", &Dataref::write);
+        });
 }

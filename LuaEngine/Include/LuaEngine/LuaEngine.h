@@ -18,7 +18,11 @@ public:
     ~LuaEngine();
 
     // lua module api
-    virtual sol::state& getLua() override { return lua(); }
+
+    cti::continuable<> runAsync(std::function<void(sol::state&)> f) override
+    {
+        return cti::async([this, f] { f(lua()); });
+    }
 
     // own
     void load();

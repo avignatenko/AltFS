@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include "../Include/LuaEngine/LuaEngine.h"
 #include "../Include/LuaEngine/LuaModule.h"
