@@ -39,8 +39,8 @@ typedef struct tagXC_ACTION_WRITE_HDR
 #define XC_RETURN_FAILURE 0
 #define XC_RETURN_SUCCESS 1
 
-FSUIPCEngine::FSUIPCEngine(asio::io_context& ex, const std::filesystem::path& scriptPath)
-    : m_lua(scriptPath), m_xPlaneModule(m_lua, ex), m_logModule(m_lua)
+FSUIPCEngine::FSUIPCEngine(asio::any_io_executor ex, const std::filesystem::path& scriptPath)
+    : m_lua(scriptPath, ex), m_xPlaneModule(m_lua, ex), m_logModule(m_lua, ex)
 
 {
 }
@@ -60,13 +60,9 @@ cti::continuable<> FSUIPCEngine::init()
     return m_xPlaneModule.discover()
         .then([this](xplaneudpcpp::BeaconListener::ServerInfo info)
               { return m_xPlaneModule.connect(info.host, info.port, 50000); })
-        .then(
-            [this]
-            {
-                m_logModule.init();
-                m_xPlaneModule.init();
-                m_lua.load();
-            });
+        .then([this] { m_logModule.init(); })
+        .then([this] { m_xPlaneModule.init(); })
+        .then([this] { m_lua.load(); });
 }
 
 LRESULT FSUIPCEngine::processMessage(WPARAM wParam, LPARAM lParam)

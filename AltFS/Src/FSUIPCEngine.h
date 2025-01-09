@@ -16,7 +16,7 @@
 class FSUIPCEngine
 {
 public:
-    FSUIPCEngine(asio::io_context& ex, const std::filesystem::path& scriptPath);
+    FSUIPCEngine(asio::any_io_executor ex, const std::filesystem::path& scriptPath);
     ~FSUIPCEngine();
 
     cti::continuable<> init();
@@ -30,7 +30,7 @@ private:
 private:
     std::map<ATOM, std::pair<HANDLE, BYTE*>> m_fileMap;
 
-    LuaEngine m_lua;
+    LuaEngineAsync m_lua;
     LuaXPlane m_xPlaneModule;
     LuaLogging m_logModule;
 };
