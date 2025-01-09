@@ -72,9 +72,9 @@ int main(int argc, char** argv)
 
     spdlog::info("AltFs started");
 
-    LuaEngine m_lua(exePath.parent_path() / "lua");
+    LuaEngineAsync m_lua(exePath.parent_path() / "lua", runner.get_executor());
     LuaXPlane m_xPlaneModule(m_lua, runner.get_executor());
-    LuaLogging luaLogging(m_lua);
+    LuaLogging luaLogging(m_lua, runner.get_executor());
 
     int16_t currentposition = -16383;
 
@@ -87,14 +87,11 @@ int main(int argc, char** argv)
     // m_xPlaneModule.discover()
     //   .then([&](xplaneudpcpp::BeaconListener::ServerInfo info)
     //         { return m_xPlaneModule.connect(info.host, info.port, 50000); })
-    m_xPlaneModule.connect("192.168.0.114", 49000, 50000)
+    (m_xPlaneModule.connect("192.168.0.114", 49000, 50000) >> luaLogging.init() >> m_xPlaneModule.init() >>
+     m_lua.load())
         .then(
             [&]
             {
-                luaLogging.init();
-                m_xPlaneModule.init();
-                m_lua.load();
-
                 t.wait(
                     [&]
                     {

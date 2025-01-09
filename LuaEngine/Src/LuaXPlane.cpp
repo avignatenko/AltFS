@@ -26,6 +26,7 @@ LuaXPlane::LuaXPlane(LuaModuleAPI& api, asio::any_io_executor ex) : api_(api), e
 
 LuaXPlane::~LuaXPlane()
 {
+    xplaneClient_.reset();
     s_instance = nullptr;
 }
 
@@ -41,7 +42,20 @@ public:
         if (!subcribed_)
         {
             LuaXPlane::s_instance->xplaneClient_->subscribeDataref(path_, freq_,
-                                                                   [this](float value) { value_ = value; });
+                                                                   [this](float value)
+                                                                   {
+                                                                       ;
+                                                                       ;
+                                                                       ;
+                                                                       LuaXPlane::s_instance->api_.runAsync(
+                                                                           [this, value](sol::state&)
+                                                                           {
+                                                                               ;
+                                                                               ;
+                                                                               ;
+                                                                               value_ = value;
+                                                                           });
+                                                                   });
 
             subcribed_ = true;
         }
@@ -75,16 +89,19 @@ cti::continuable<> LuaXPlane::connect(const std::string& address, int port, int 
     return xplaneClient_->connect();
 }
 
-void LuaXPlane::init()
+cti::continuable<> LuaXPlane::init()
 {
-    api_.runAsync(
-        [this](sol::state& lua)
-        {
-            auto xplane = lua["xplane"].get_or_create<sol::table>();
+    return api_
+        .runAsync(
+            [this](sol::state& lua)
+            {
+                auto xplane = lua["xplane"].get_or_create<sol::table>();
 
-            xplane["types"] = lua.create_table_with("int", 1, "float", 2, "intarray", 3, "floatarray", 4, "string", 5);
+                xplane["types"] =
+                    lua.create_table_with("int", 1, "float", 2, "intarray", 3, "floatarray", 4, "string", 5);
 
-            xplane.new_usertype<Dataref>("dataref", sol::constructors<Dataref(const std::string&, int, int)>(), "read",
-                                         &Dataref::read, "write", &Dataref::write);
-        });
+                xplane.new_usertype<Dataref>("dataref", sol::constructors<Dataref(const std::string&, int, int)>(),
+                                             "read", &Dataref::read, "write", &Dataref::write);
+            })
+        .next(postOnAsio(ex_));
 }

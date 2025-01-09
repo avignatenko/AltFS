@@ -38,10 +38,10 @@ cti::continuable<> UDPClientAsync::subscribeDataref(const std::string& dataref, 
     return runAsync(
         [this, dataref, freq, callback]
         {
-            auto repostCallback = [callback, caller = caller()](float value)
-            { asio::post(caller, [callback, value] { callback(value); }); };
+            // auto repostCallback = [callback, caller = caller()](float value)
+            //{ asio::post(caller, [callback, value] { callback(value); }); };
 
-            return client_->subscribeDataref(dataref, freq, repostCallback);
+            return client_->subscribeDataref(dataref, freq, callback);
         });
 }
 

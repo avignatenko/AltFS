@@ -23,7 +23,7 @@ public:
     cti::continuable<xplaneudpcpp::BeaconListener::ServerInfo> discover();
     cti::continuable<> connect(const std::string& address, int port, int localPort);
 
-    void init();
+    cti::continuable<> init();
 
     bool isConnected() const { return xplaneClient_ != nullptr; }
 
