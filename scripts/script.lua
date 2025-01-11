@@ -63,6 +63,7 @@ local turbulence_percent = xplane.dataref:new("sim/weather/wind_turbulence_perce
 local flapss_left_deployment_degrees = xplane.dataref:new("sim/flightmodel2/wing/flap1_deg[0]", xplane.types.float, freq.low)
 local flaps_right_deployment_degrees = xplane.dataref:new("sim/flightmodel2/wing/flap1_deg[1]", xplane.types.float, freq.low)
 local flaps_deployment_ratio = xplane.dataref:new("sim/flightmodel2/controls/flap1_deploy_ratio", xplane.types.float, freq.low)
+local custom_cl_engage = xplane.dataref:new("ai/cockpit/devices/cl_engage", xplane.types.int, freq.verylow)
 
 local readonly = function(value) log(loglevel.err, "error: can't write into readonly var") end
 
@@ -98,7 +99,7 @@ offsets=
 -- # Custom offset for trim value (to be removed!)
 [0x66c4] = {fsuipc_types.sint16, function() return cl_trim end, function(value) cl_trim = value end},
 -- # Custom offset for cl engage
-[0x66c8] = {fsuipc_types.uint8, function() return 0 end, readonly},
+[0x66c8] = {fsuipc_types.uint8, function() return custom_cl_engage end, readonly},
 
 --Stall warning (0=no, 1=stall)
 [0x5300] = { fsuipc_types.uint8, function() return 0 end, readonly },
