@@ -99,7 +99,7 @@ offsets=
 -- # Custom offset for trim value (to be removed!)
 [0x66c4] = {fsuipc_types.sint16, function() return cl_trim end, function(value) cl_trim = value end},
 -- # Custom offset for cl engage
-[0x66c8] = {fsuipc_types.uint8, function() return 0 end, readonly},
+[0x66c8] = {fsuipc_types.uint8, function() return custom_cl_engage:read() end, readonly},
 
 --Stall warning (0=no, 1=stall)
 [0x5300] = { fsuipc_types.uint8, function() return 0 end, readonly },
