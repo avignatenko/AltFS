@@ -2,19 +2,19 @@
 
 #include <function2/function2.hpp>
 
-struct minimal_io_executor
+struct PostThreadMessageExecutor
 {
     const unsigned int kCustomMessage = WM_USER + 1;
 
     asio::execution_context* context_;
     DWORD threadId_;
 
-    bool operator==(const minimal_io_executor& other) const noexcept
+    bool operator==(const PostThreadMessageExecutor& other) const noexcept
     {
         return context_ == other.context_ && threadId_ == other.threadId_;
     }
 
-    bool operator!=(const minimal_io_executor& other) const noexcept { return !(*this == other); }
+    bool operator!=(const PostThreadMessageExecutor& other) const noexcept { return !(*this == other); }
 
     asio::execution_context& query(asio::execution::context_t) const noexcept { return *context_; }
 
@@ -40,7 +40,7 @@ namespace traits
 #if !defined(ASIO_HAS_DEDUCED_EXECUTE_MEMBER_TRAIT)
 
 template <typename F>
-struct execute_member<minimal_io_executor, F>
+struct execute_member<PostThreadMessageExecutor, F>
 {
     static constexpr bool is_valid = true;
     static constexpr bool is_noexcept = true;
@@ -51,7 +51,7 @@ struct execute_member<minimal_io_executor, F>
 #if !defined(ASIO_HAS_DEDUCED_EQUALITY_COMPARABLE_TRAIT)
 
 template <>
-struct equality_comparable<minimal_io_executor>
+struct equality_comparable<PostThreadMessageExecutor>
 {
     static constexpr bool is_valid = true;
     static constexpr bool is_noexcept = true;
@@ -61,7 +61,7 @@ struct equality_comparable<minimal_io_executor>
 #if !defined(ASIO_HAS_DEDUCED_QUERY_MEMBER_TRAIT)
 
 template <>
-struct query_member<minimal_io_executor, asio::execution::context_t>
+struct query_member<PostThreadMessageExecutor, asio::execution::context_t>
 {
     static constexpr bool is_valid = true;
     static constexpr bool is_noexcept = true;
@@ -73,7 +73,7 @@ struct query_member<minimal_io_executor, asio::execution::context_t>
 
 template <typename Property>
 struct query_static_constexpr_member<
-    minimal_io_executor, Property,
+    PostThreadMessageExecutor, Property,
     typename enable_if<std::is_convertible<Property, asio::execution::blocking_t>::value>::type>
 {
     static constexpr bool is_valid = true;
@@ -94,15 +94,13 @@ public:
 
     auto get_executor()
     {
-        minimal_io_executor e;
-        e.context_ = this;
-        e.threadId_ = threadId_;
+        PostThreadMessageExecutor e{this, threadId_};
         return e;
     }
 
     void process(const MSG& msg)
     {
-        if (msg.message == WM_USER + 1)
+        if (msg.message == PostThreadMessageExecutor::kCustomMessage)
         {
             auto* t = (fu2::unique_function<void()>*)msg.wParam;
             (*t)();
